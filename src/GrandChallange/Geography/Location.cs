@@ -46,8 +46,8 @@ namespace GrandChallange.Geography
             get
             {
                 var dy = (QueryRespect == QueryRespect.RespectQuery1) ?
-                                    SouthDistancePer500Meters :
-                                    SouthDistancePer500Meters / 2;
+                    SouthDistancePer500Meters :
+                    SouthDistancePer500Meters / 2;
 
                 int index = (int)((Coordinates.Latitude - ZeroZeroCoordinates.Latitude) / dy);
                 if (index < MinCellIndex || index > MaxCellIndex)

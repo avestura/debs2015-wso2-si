@@ -20,43 +20,43 @@ namespace GrandChallange.Models
         public string DropoffDatetime { get; set; }
 
         [Index(4)]
-        public string TripTimeInSecs { get; set; }
+        public int TripTimeInSecs { get; set; }
 
         [Index(5)]
-        public string TripDistance { get; set; }
+        public int TripDistance { get; set; }
 
         [Index(6)]
-        public string PickupLongitude { get; set; }
+        public float PickupLongitude { get; set; }
 
         [Index(7)]
-        public string PickupLatitude { get; set; }
+        public float PickupLatitude { get; set; }
 
         [Index(8)]
-        public string DropoffLongitude { get; set; }
+        public float DropoffLongitude { get; set; }
 
         [Index(9)]
-        public string DropoffLatitude { get; set; }
+        public float DropoffLatitude { get; set; }
 
         [Index(10)]
         public string PaymentType { get; set; }
 
         [Index(11)]
-        public string FareAmount { get; set; }
+        public float FareAmount { get; set; }
 
         [Index(12)]
-        public string Surcharge { get; set; }
+        public float Surcharge { get; set; }
 
         [Index(13)]
-        public string MtaTax { get; set; }
+        public float MtaTax { get; set; }
 
         [Index(14)]
-        public string TipAmount { get; set; }
+        public float TipAmount { get; set; }
 
         [Index(15)]
-        public string TollsAmount { get; set; }
+        public float TollsAmount { get; set; }
 
         [Index(16)]
-        public string TotalAmount { get; set; }
+        public float TotalAmount { get; set; }
 
     }
 }

@@ -57,6 +57,8 @@ namespace GrandChallange.Geography
             QueryRespect = queryRespect;
             Coordinates = coordinates;
         }
+
+        public string CellId => $"{X}.{Y}";
     }
 
     public enum QueryRespect

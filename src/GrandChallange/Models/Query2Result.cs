@@ -134,7 +134,7 @@ namespace GrandChallange.Models
         public float ProfitabilityOfCell10 { get; set; }
 
         [Index(42)]
-        public string delay { get; set; }
+        public string Delay { get; set; }
 
 
 

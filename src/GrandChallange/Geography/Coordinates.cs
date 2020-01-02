@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace GrandChallange.Geography
+﻿namespace GrandChallange.Geography
 {
     public struct Coordinates
     {

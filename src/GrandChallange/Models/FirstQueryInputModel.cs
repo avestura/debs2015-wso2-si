@@ -2,12 +2,12 @@
 {
     public class FirstQueryInputModel
     {
-        public long PickUpTime { get; set; }
-        public long DropOffTime { get; set; }
-        public string PickCellId { get; set; }
-        public string DropCellId { get; set; }
-        public long EventTimeStamp { get; set; }
-        public string PickUpTimeOrig { get; set; }
-        public string DropOffTimeOrig { get; set; }
+        public long PickupTime { get; set; }
+        public long DropoffTime { get; set; }
+        public string PickCell { get; set; }
+        public string DropCell { get; set; }
+        public long EventTimestamp { get; set; }
+        public string PickupTimeOrig { get; set; }
+        public string DropoffTimeOrig { get; set; }
     }
 }

@@ -5,17 +5,26 @@ using GrandChallange.Models;
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace GrandChallange
 {
     class Program
     {
         private string csvPath = @"D:\University\DSL\dd.csv";
+        private string URI = "http://172.17.8.167:8006/q1";
 
         static void Main(string[] args)
         {
             Program program = new Program();
             program.ReadInput();
+
+            Console.ReadKey();
         }
 
         public void ReadInput() 
@@ -48,14 +57,21 @@ namespace GrandChallange
 
                         newInput = new FirstQueryInputModel
                         {
-                            PickUpTime = timeStamp.GetUnixTime(record.PickupDatetime),
-                            DropOffTime = timeStamp.GetUnixTime(record.DropoffDatetime),
-                            PickUpTimeOrig = record.PickupDatetime,
-                            DropOffTimeOrig = record.DropoffDatetime,
-                            PickCellId = pickUpLocation.CellId,
-                            DropCellId = dropOffLocation.CellId,
-                            EventTimeStamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                            PickupTime = timeStamp.GetUnixTime(record.PickupDatetime),
+                            DropoffTime = timeStamp.GetUnixTime(record.DropoffDatetime),
+                            PickupTimeOrig = record.PickupDatetime,
+                            DropoffTimeOrig = record.DropoffDatetime,
+                            PickCell = pickUpLocation.CellId,
+                            DropCell = dropOffLocation.CellId,
+                            EventTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                         };
+
+                        var jsonModel = new
+                        {
+                            @event = newInput
+                        };
+
+                        SendEventAsync(JsonSerializer.Serialize(jsonModel));
                     }
                     catch (Exception ex)
                     {
@@ -64,6 +80,62 @@ namespace GrandChallange
                     }
                 }
             }
+        }
+
+        private async Task SendEventAsync(string json)
+        {
+            if (string.IsNullOrEmpty(json))
+            {
+                throw new ArgumentNullException(nameof(json));
+            }
+
+            Console.WriteLine("Send new event to server");
+            Console.WriteLine("Waiting...");
+
+            using (WebClient webClient = new WebClient())
+            {
+                /*
+                HttpClient client = new HttpClient();
+
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var result = client.PostAsync(URI, content).Result;
+
+                Console.WriteLine(result.ToString());
+                Console.WriteLine("Done :)");
+                */
+
+                
+
+                webClient.Headers[HttpRequestHeader.ContentType] = "application/json";
+                //webClient.UseDefaultCredentials = true;
+                //webClient.Credentials = new NetworkCredential("admin", "admin");
+                string HtmlResult = webClient.UploadString(URI, json);
+
+                Console.WriteLine(HtmlResult);
+                Console.WriteLine("Done :)");
+                
+            }
+
+            //await Task.Run(() =>
+            //{
+
+            //    try
+            //    {
+            //        using (WebClient wc = new WebClient())
+            //        {
+            //            wc.Headers[HttpRequestHeader.ContentType] = "application/json";
+            //            string HtmlResult = wc.UploadString(URI, json);
+            //        }
+            //    }
+            //    catch (Exception)
+            //    {
+
+            //        throw;
+            //    }
+
+            //});
+
+
         }
     }
 }

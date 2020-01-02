@@ -2,6 +2,7 @@
 
 ### Input:
 
+- medallion
 - pickup_time
 - dropoff_time
 - pick_lat -> to cell id

@@ -1,0 +1,77 @@
+@App:name('DebsQuery1')
+@App:description('Queries for DEBS Query 1')
+
+@source(type = 'http-service', source.id="get-trip", receiver.url = "http://0.0.0.0:8006/q1", basic.auth.enabled = "false",
+	@map(type = 'json', @attributes(MessageId='trp:messageId',
+                                        PickupTime='$.event.PickupTime',
+                                        DropoffTime='$.event.DropoffTime',
+                                        PickupTimeOrig='$.event.PickupTimeOrig',
+                                        DropoffTimeOrig='$.event.DropoffTimeOrig',
+                                        PickCell='$.event.PickCell',
+                                        DropCell='$.event.DropCell',
+                                        EventTimestamp='$.event.EventTimestamp'
+                                    )))
+define stream Trip (
+    MessageId string,
+    PickupTime long,
+    DropoffTime long,
+    PickupTimeOrig string,
+    DropoffTimeOrig string,
+    PickCell string,
+    DropCell string,
+    EventTimestamp long
+);
+
+
+define stream OutputStream (
+    PickupTime string,
+    dropoff_time string,
+    StartCellId1 string, EndCellId1 string,
+    StartCellId2 string, EndCellId2 string,
+    StartCellId3 string, EndCellId3 string,
+    StartCellId4 string, EndCellId4 string,
+    StartCellId5 string, EndCellId5 string,
+    StartCellId6 string, EndCellId6 string,
+    StartCellId7 string, EndCellId7 string,
+    StartCellId8 string, EndCellId8 string,
+    StartCellId9 string, EndCellId9 string,
+    StartCellId10 string, EndCellId10 string,
+    Delay float);
+
+
+define function frequentK[JAVASCRIPT] return object {
+    var pickCell = data[0];
+    var dropCell = data[1];
+    var maxToKeep = 10;
+    var timeStamp = data[2];
+
+    return {
+        "name": "aaa",
+        "timeStamp": timeStamp
+    };
+};
+
+@sink(type='file', @map(type='json'), file.uri='C:/foo/low_productions.txt')
+@sink(type='http-service-response', @map(type='json' ), source.id="get-trip", message.id='{{MessageId}}')
+define stream myStream (MessageId string, obj object);
+
+@info(name = 'get count stream queryy')
+from Trip#window.externalTime(DropoffTime, 30 min)
+select MessageId, PickCell , DropCell,  PickupTimeOrig, DropoffTimeOrig, EventTimestamp
+insert all events  into countStream;
+
+from countStream
+    select MessageId , frequentK(PickCell, DropCell, EventTimestamp) as obj
+    insert all events into myStream;
+
+
+-- @info(name = 'Main Query')
+-- from countStream
+--select frequentK(PickCell, DropCell, EventTimestamp) as
+ --insert all into OutputStream;
+
+-- from recentCountStream select pickup_datetime_org, dropoff_datetime_org, startCell1 ,endCell1, startCell2, endCell2, startCell3 ,endCell3, startCell4, endCell4, startCell5, endCell5, startCell6, endCell6,
+-- startCell7 ,endCell7 , startCell8, endCell8, startCell9, endCell9, startCell10, endCell10, iij_timestamp
+-- insert into outputStream
+
+

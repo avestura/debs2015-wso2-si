@@ -4,20 +4,14 @@ namespace GrandChallange.Extensions
 {
     public class TimeStamp
     {
-        public DateTime dateTime { get; set; }
-
-        public TimeStamp(DateTime newDateTime) 
+        public long GetUnixTime(string dateTimeString) 
         {
-            if (dateTime == null)
+            if (dateTimeString == null)
             {
-                throw new ArgumentNullException(nameof(newDateTime));
+                throw new ArgumentNullException(nameof(dateTimeString));
             }
 
-            dateTime = newDateTime;
-        }
-
-        public long GetUnixTime() 
-        {          
+            DateTime dateTime = Convert.ToDateTime(dateTimeString);
             var dateTimeOffset = new DateTimeOffset(dateTime).ToUniversalTime();
             return dateTimeOffset.ToUnixTimeMilliseconds();
         }

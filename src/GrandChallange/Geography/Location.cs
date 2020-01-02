@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace GrandChallange.Geography
 {
-
-
     /// <summary>
     /// This class maps a coordination like (41.47493, -74.9135) to its corresponding map cell like (1, 3)
     /// </summary>

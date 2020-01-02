@@ -1,7 +1,5 @@
 ﻿using CsvHelper.Configuration.Attributes;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace GrandChallange.Models
 {
@@ -23,40 +21,40 @@ namespace GrandChallange.Models
         public int TripTimeInSecs { get; set; }
 
         [Index(5)]
-        public int TripDistance { get; set; }
+        public double TripDistance { get; set; }
 
         [Index(6)]
-        public float PickupLongitude { get; set; }
+        public string PickupLongitude { get; set; }
 
         [Index(7)]
-        public float PickupLatitude { get; set; }
+        public string PickupLatitude { get; set; }
 
         [Index(8)]
-        public float DropoffLongitude { get; set; }
+        public string DropoffLongitude { get; set; }
 
         [Index(9)]
-        public float DropoffLatitude { get; set; }
+        public string DropoffLatitude { get; set; }
 
         [Index(10)]
         public string PaymentType { get; set; }
 
         [Index(11)]
-        public float FareAmount { get; set; }
+        public string FareAmount { get; set; }
 
         [Index(12)]
-        public float Surcharge { get; set; }
+        public string Surcharge { get; set; }
 
         [Index(13)]
-        public float MtaTax { get; set; }
+        public string MtaTax { get; set; }
 
         [Index(14)]
-        public float TipAmount { get; set; }
+        public string TipAmount { get; set; }
 
         [Index(15)]
-        public float TollsAmount { get; set; }
+        public string TollsAmount { get; set; }
 
         [Index(16)]
-        public float TotalAmount { get; set; }
+        public string TotalAmount { get; set; }
 
     }
 }

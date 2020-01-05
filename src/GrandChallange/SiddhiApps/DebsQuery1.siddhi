@@ -1,7 +1,7 @@
 @App:name('DebsQuery1')
 @App:description('Queries for DEBS Query 1')
 
-@source(type = 'http-service', source.id="get-trip", receiver.url = "http://0.0.0.0:8006/q1", basic.auth.enabled = "false",
+@source(type = 'http-service', source.id="get-TripEvent", receiver.url = "http://0.0.0.0:8006/q1", basic.auth.enabled = "false",
 	@map(type = 'json', @attributes(MessageId='trp:messageId',
                                         PickupTime='$.event.PickupTime',
                                         DropoffTime='$.event.DropoffTime',
@@ -11,7 +11,7 @@
                                         DropCell='$.event.DropCell',
                                         EventTimestamp='$.event.EventTimestamp'
                                     )))
-define stream Trip (
+define stream TripEvent (
     MessageId string,
     PickupTime long,
     DropoffTime long,
@@ -23,55 +23,122 @@ define stream Trip (
 );
 
 
-define stream OutputStream (
-    PickupTime string,
-    dropoff_time string,
-    StartCellId1 string, EndCellId1 string,
-    StartCellId2 string, EndCellId2 string,
-    StartCellId3 string, EndCellId3 string,
-    StartCellId4 string, EndCellId4 string,
-    StartCellId5 string, EndCellId5 string,
-    StartCellId6 string, EndCellId6 string,
-    StartCellId7 string, EndCellId7 string,
-    StartCellId8 string, EndCellId8 string,
-    StartCellId9 string, EndCellId9 string,
-    StartCellId10 string, EndCellId10 string,
-    Delay float);
+@sink(type='file', @map(type='json'), file.uri='C:/foo/low_productions.txt')
+@sink(type='http-service-response', @map(type='json' ), source.id="get-TripEvent", message.id='{{MessageId}}')
+define stream OutputStream (MessageId string, Response object);
 
+
+
+@sink(type='inMemory' , topic='data')
+define table FrequentTable(PickCell string, DropCell string, dropTimestamp long);
+
+define function getUnixTime[JavaScript] return long {
+    return new Date(data[0]).getTime();
+};
+
+define function now[JavaScript] return long {
+ return Date.now();
+};
+
+define function isGarbage[JavaScript] return bool {
+    var now = Date.now();
+    var timespan = 30 * 60 * 1000;
+    var item = data[0];
+
+    return item < (now - timespan);
+};
+
+define function isValid[JavaScript] return bool {
+    var now = Date.now();
+    var timespan = 30 * 60 * 1000;
+    var item = data[0];
+
+    return item >= (now - timespan);
+};
+
+define function aggregateCells[JavaScript] return string {
+    var d0 = data[0];
+    var del = '-';
+    var d1 = data[1];
+    var str = d0 + del + d1;
+    return str;
+};
 
 define function frequentK[JAVASCRIPT] return object {
-    var pickCell = data[0];
-    var dropCell = data[1];
-    var maxToKeep = 10;
-    var timeStamp = data[2];
+    var pickTime = data[0];
+    var dropTime = data[1];
+    var pickCell = data[2];
+    var dropCell = data[3];
+    var timeStamp = data[4];
+
+    var debug = data[5];
+
 
     return {
-        "name": "aaa",
-        "timeStamp": timeStamp
+        PickupTime: debug,
+        DropoffTime: "",
+        StartCellId1: "",
+        EndCellId1: "",
+        StartCellId2: "",
+        EndCellId2: "",
+        StartCellId3: "",
+        EndCellId3: "",
+        StartCellId4: "",
+        EndCellId4: "",
+        StartCellId5: "",
+        EndCellId5: "",
+        StartCellId6: "",
+        EndCellId6: "",
+        StartCellId7: "",
+        EndCellId7: "",
+        StartCellId8: "",
+        EndCellId8: "",
+        StartCellId9: "",
+        EndCellId9: "",
+        StartCellId10: "",
+        EndCellId10: "",
+        Delay: 0.0
     };
 };
 
-@sink(type='file', @map(type='json'), file.uri='C:/foo/low_productions.txt')
-@sink(type='http-service-response', @map(type='json' ), source.id="get-trip", message.id='{{MessageId}}')
-define stream myStream (MessageId string, obj object);
 
-@info(name = 'get count stream queryy')
-from Trip#window.externalTime(DropoffTime, 30 min)
-select MessageId, PickCell , DropCell,  PickupTimeOrig, DropoffTimeOrig, EventTimestamp
-insert all events  into countStream;
+@info(name = 'windows over events')
+from TripEvent#window.externalTime(DropoffTime, 30 min)
+select *
+insert all events into windowedStream;
 
-from countStream
-    select MessageId , frequentK(PickCell, DropCell, EventTimestamp) as obj
-    insert all events into myStream;
+@info(name='table store')
+from windowedStream
+select PickCell, DropCell, DropoffTime as dropTimestamp
+insert all events into FrequentTable;
+
+@info(name='garbage collect')
+from windowedStream
+select EventTimestamp
+delete FrequentTable
+on (isGarbage(EventTimestamp));
+
+@info(name='frequent query')
+from windowedStream as ws
+join FrequentTable[isValid(dropTimestamp)] as ft
+select
+    count(aggregateCells(ft.PickCell, ft.DropCell)) as count,
+    ft.PickCell,
+    ft.DropCell,
+    ws.PickupTime,
+    ws.DropoffTime,
+    ws.MessageId,
+    ws.EventTimestamp
+order by count
+limit 10
+insert all events into TopFreq;
 
 
--- @info(name = 'Main Query')
--- from countStream
---select frequentK(PickCell, DropCell, EventTimestamp) as
- --insert all into OutputStream;
-
--- from recentCountStream select pickup_datetime_org, dropoff_datetime_org, startCell1 ,endCell1, startCell2, endCell2, startCell3 ,endCell3, startCell4, endCell4, startCell5, endCell5, startCell6, endCell6,
--- startCell7 ,endCell7 , startCell8, endCell8, startCell9, endCell9, startCell10, endCell10, iij_timestamp
--- insert into outputStream
+@info(name='response sink')
+from TopFreq
+select
+    MessageId,
+    frequentK(PickupTime, DropoffTime, PickCell, DropCell, EventTimestamp) as Response
+insert into OutputStream;
 
 

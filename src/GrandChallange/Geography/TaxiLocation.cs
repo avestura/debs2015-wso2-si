@@ -10,9 +10,9 @@ namespace GrandChallange.Geography
         public const double EastDistancePer500Meters = 0.005986;
         public const double SouthDistancePer500Meters = 0.004491556;
 
-        public static Coordinates CenterOfFirstCell => (41.474937, -74.913585);
+        public static Coordinates CenterOfFirstCell => (-74.913585, 41.474937);
 
-        public static Coordinates ZeroZeroCoordinates => (41.471944, -74.915830778);
+        public static Coordinates ZeroZeroCoordinates => (-74.915830778, 41.471944);
 
         public QueryRespect QueryRespect { get; }
 
@@ -45,7 +45,7 @@ namespace GrandChallange.Geography
                     SouthDistancePer500Meters :
                     SouthDistancePer500Meters / 2;
 
-                int index = (int)((Coordinates.Latitude - ZeroZeroCoordinates.Latitude) / dy);
+                int index = (int)((ZeroZeroCoordinates.Latitude - Coordinates.Latitude) / dy);
                 if (index < MinCellIndex || index > MaxCellIndex)
                     throw new Exception("Index is out of the bounds of map.");
                 return index;

@@ -36,7 +36,9 @@ insert all events into windowedStream;
 from windowedStream
 select
     aggregateCells(PickCell, DropCell) as AggregatedCells,
-    EventTimestamp as Timestamp
+    EventTimestamp as Timestamp,
+    PickupTime long,
+    DropoffTime long
 
 insert into OutputStream;
 

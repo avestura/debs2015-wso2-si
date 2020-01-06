@@ -21,7 +21,13 @@ namespace GrandChallange.EventWebService.Controllers
         private static Dictionary<string, List<long>> InMemoryData { get; set; }
             = new Dictionary<string, List<long>>();
 
+        private KeyValuePair<string, List<long>>[] QueryResult { get; set; }
+
         public static long lastReqTimestamp = 0;
+
+        private static string TriggeredPickupTime { get; set; }
+
+        private static string TriggeredDropoffTime { get; set; }
 
         public Query1FrequentController(ILogger<Query1FrequentController> logger)
         {
@@ -29,30 +35,16 @@ namespace GrandChallange.EventWebService.Controllers
         }
 
         [HttpGet]
-        public Query1Result Get(long reqTimestamp, string pickTime, string dropTime)
+        public Query1Result Get(long reqTimestamp)
         {
-            lastReqTimestamp = (reqTimestamp > lastReqTimestamp) ? reqTimestamp : lastReqTimestamp;
 
-            var now = lastReqTimestamp;
-            var _30minAgo = now - 30 * 60 * 1000;
-
-            InMemoryData = InMemoryData.ToDictionary(
-                x => x.Key,
-                x => x.Value.Where(y => y > _30minAgo).ToList()
-            )
-            .OrderByDescending(x => x.Value.Count)
-             .ToDictionary(
-                x => x.Key,
-                x => x.Value
-             );
-
-            var query = InMemoryData.Take(10).ToArray();
+            var query = QueryResult;
 
             return new Query1Result
             {
-                Delay = (now - reqTimestamp).ToString(),
-                PickupDatetime = pickTime,
-                DropoffDatetime = dropTime,
+                Delay = (lastReqTimestamp - reqTimestamp).ToString(),
+                PickupDatetime = TriggeredPickupTime,
+                DropoffDatetime = TriggeredDropoffTime,
                 StartCellId1 = (query.Length > 0) ? ExtractLocation(query[0].Key).pick : null,
                 StartCellId2 = (query.Length > 1) ? ExtractLocation(query[1].Key).pick : null,
                 StartCellId3 = (query.Length > 2) ? ExtractLocation(query[2].Key).pick : null,
@@ -75,6 +67,31 @@ namespace GrandChallange.EventWebService.Controllers
                 EndCellId9 = (query.Length > 8) ? ExtractLocation(query[8].Key).drop : null,
                 EndCellId10 = (query.Length > 9) ? ExtractLocation(query[9].Key).drop : null
             };
+        }
+
+        private void UpdateData(long reqTimestamp, long pickTime, long dropTime, string key)
+        {
+            lastReqTimestamp = Math.Max(lastReqTimestamp, reqTimestamp) ;
+            var _30minAgo = reqTimestamp - (30 * 60 * 1000);
+
+            InMemoryData = InMemoryData.ToDictionary(
+                x => x.Key,
+                x => x.Value.Where(y => y > _30minAgo).ToList()
+            )
+            .OrderByDescending(x => x.Value.Count)
+             .ToDictionary(
+                x => x.Key,
+                x => x.Value
+             );
+
+            QueryResult = InMemoryData.Take(10).ToArray();
+
+            if(QueryResult.Any(x => x.Key == key))
+            {
+                TriggeredDropoffTime = dropTime.ToString();
+                TriggeredPickupTime = pickTime.ToString();
+            }
+
         }
 
         public (string pick, string drop) ExtractLocation(string location)
@@ -101,12 +118,18 @@ namespace GrandChallange.EventWebService.Controllers
                 InMemoryData[aggregatedCells] = new List<long>() { timestamp };
             }
 
+            UpdateData(timestamp, req.Event.PickupTime, req.Event.DropoffTime, aggregatedCells);
+
             return "OK";
         }
 
         public class Wso2Model
         {
             public string AggregatedCells { get; set; }
+
+            public long PickupTime { get; set; }
+
+            public long DropoffTime { get; set; }
 
             public long Timestamp { get; set; }
         }

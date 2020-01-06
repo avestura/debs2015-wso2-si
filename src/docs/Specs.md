@@ -17,3 +17,11 @@
 - start_cell [1..10]
 - end_cell [1.10]
 - delay
+
+
+# Query2 Spec
+
+profitability:
+
+ ((median fare) + (tip for last 15 min))
+div by (empty taxis for 30 min)

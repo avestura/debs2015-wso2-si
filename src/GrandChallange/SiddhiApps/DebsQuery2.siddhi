@@ -1,83 +1,122 @@
-@App:name('DebsQuery2')
-@App:description('Queries for DEBS Query 2')
+@App:name("DebsQuery2")
+@App:description("")
 
-@source(type = 'http-service', source.id="get-trip", receiver.url = "http://0.0.0.0:8006/q2", basic.auth.enabled = "false",
-	@map(type = 'json', @attributes(    MessageId='trp:messageId',
-                                        Medallion='$.event.Medallion',
-                                        PickupTime='$.event.PickupTime',
-                                        DropoffTime='$.event.DropoffTime',
-                                        PickCell='$.event.PickCell',
-                                        DropCell='$.event.DropCell',
-                                        EventTimestamp='$.event.EventTimestamp',
-                                        PickupTimeOrig='$.event.PickupTimeOrig',
-                                        DropoffTimeOrig='$.event.DropoffTimeOrig',
-                                        FareAmount='$.event.FareAmount',
-                                        TipAmount='$.event.TipAmount'
+
+@source(type = 'http', receiver.url = "http://0.0.0.0:8006/q2", basic.auth.enabled = "false",
+	@map(type = 'json', @attributes(    medallion='$.event.Medallion',
+                                        pickup_datetime='$.event.PickupTime',
+                                        dropoff_datetime='$.event.DropoffTime',
+                                        pickup_cell='$.event.PickCell',
+                                        dropoff_cell='$.event.DropCell',
+                                        iij_timestamp='$.event.EventTimestamp',
+                                        pickup_datetime_orig='$.event.PickupTimeOrig',
+                                        dropoff_datetime_orig='$.event.DropoffTimeOrig',
+                                        fare_amount='$.event.FareAmount',
+                                        tip_amount='$.event.TipAmount'
                                     )))
-define stream Trip (
-    MessageId string,
-    Medallion string,
-    PickupTime long,
-    DropoffTime long,
-    PickCell string,
-    DropCell string,
-    EventTimestamp long,
-    PickupTimeOrig string,
-    DropoffTimeOrig string,
-    FareAmount float,
-    TipAmount float
-);
+define stream taxi_trips (
+    medallion string,
+    pickup_datetime long,
+    dropoff_datetime long,
+    pickup_datetime_orig string,
+    dropoff_datetime_orig string,
+    pickup_cell string,
+    dropoff_cell string,
+    fare_amount float,
+    tip_amount float,
+    iij_timestamp long);
+
+@sink(type='http-call' , publisher.url='http://localhost:5000/Query2Median', sink.id='median', @map(type='json'))
+define stream reqMedianStream (CurrentProfit float, Now long);
+
+@source(type='http-call-response' , sink.id='median', @map(type='json'))
+define stream getMedianStream (profit float);
+
+@primaryKey('cellNo')
+define table emptyTaxiCountTable (cellNo string , emptyTaxiCount long);
 
 
-define stream OutputStream (
-    PickupDatetime string,     --Diffrent from Query1 Result class
-    DropoffDatetime string,    --why emptyTaxiesCellIds are float?
-    ProfitableCellId1 string, EmptyTaxiesInCellId1 float, MedianProfitInCellId1 float, ProfitabilityOfCell1 float,
-    ProfitableCellId2 string, EmptyTaxiesInCellId2 float, MedianProfitInCellId2 float, ProfitabilityOfCell2 float,
-    ProfitableCellId3 string, EmptyTaxiesInCellId3 float, MedianProfitInCellId3 float, ProfitabilityOfCell3 float,
-    ProfitableCellId4 string, EmptyTaxiesInCellId4 float, MedianProfitInCellId4 float, ProfitabilityOfCell4 float,
-    ProfitableCellId5 string, EmptyTaxiesInCellId5 float, MedianProfitInCellId5 float, ProfitabilityOfCell5 float,
-    ProfitableCellId6 string, EmptyTaxiesInCellId6 float, MedianProfitInCellId6 float, ProfitabilityOfCell6 float,
-    ProfitableCellId7 string, EmptyTaxiesInCellId7 float, MedianProfitInCellId7 float, ProfitabilityOfCell7 float,
-    ProfitableCellId8 string, EmptyTaxiesInCellId8 float, MedianProfitInCellId8 float, ProfitabilityOfCell8 float,
-    ProfitableCellId9 string, EmptyTaxiesInCellId9 float, MedianProfitInCellId9 float, ProfitabilityOfCell9 float,
-    ProfitableCellId10 string, EmptyTaxiesInCellId10 float, MedianProfitInCellId10 float, ProfitabilityOfCell10 float,
-    Delay float);
+@info(name = 'query1')
+from taxi_trips
+select
+    pickup_cell as startCellNo,
+    dropoff_cell as endCellNo ,
+    pickup_datetime as pickup_datetime,
+    dropoff_datetime as dropoff_datetime,
+    fare_amount, tip_amount,
+    medallion,
+    iij_timestamp
+ insert into cell_based_taxi_trips;
+
+ @info(name = 'query2')
+from cell_based_taxi_trips
+insert into filtered_cell_based_taxi_trips;
+
+--- Calculate Median using Web Service
+from filtered_cell_based_taxi_trips#window.externalTime(dropoff_datetime , 15 min)
+select fare_amount+tip_amount as CurrentProfit, iij_timestamp as Now
+insert all events into reqMedianStream;
+--- Calculate Median using Web Service
+
+@info(name = 'query3')
+from filtered_cell_based_taxi_trips#window.externalTime(dropoff_datetime , 15 min) join getMedianStream
+select profit, startCellNo, pickup_datetime, dropoff_datetime, iij_timestamp
+group by startCellNo
+insert all events  into profitStream;
+
+@info(name = 'query4')
+from filtered_cell_based_taxi_trips
+select  endCellNo as cellNo , 1 as emptyTaxiCount insert into taxiCountUpdateStream ;
+
+@info(name = 'query5')
+from every e1 = filtered_cell_based_taxi_trips -> e2 = filtered_cell_based_taxi_trips [(e1.medallion == e2.medallion)
+or (e2.dropoff_datetime-e1.dropoff_datetime)>=1800000]
+select e1.endCellNo as cellNo , -1 as emptyTaxiCount
+insert into taxiCountUpdateStream;
+
+@info(name = 'query6')
+from taxiCountUpdateStream
+select cellNo , sum(emptyTaxiCount) as emptyTaxiCount
+group by cellNo
+insert into emptyTaxiCountTable ;
+
+@info(name = 'query7')
+from profitStream#window.length(0) join emptyTaxiCountTable
+on profitStream.startCellNo == emptyTaxiCountTable.cellNo
+select
+    profitStream.startCellNo as cellNo,
+    profitStream.profit as profit,
+    emptyTaxiCountTable.emptyTaxiCount as emptyTaxiCount,
+    profitStream.pickup_datetime,
+    profitStream.dropoff_datetime,
+    profitStream.iij_timestamp as iij_timestamp
+insert into profitRawData;
+
+@info(name = 'query8')
+from profitRawData[emptyTaxiCount != 0]
+select cellNo, profit, emptyTaxiCount,  pickup_datetime, dropoff_datetime, profit/emptyTaxiCount as profit_per_taxi, iij_timestamp
+insert into finalProfitStream;
+
+@info(name = 'query9')
+from finalProfitStream#MaxK:getMaxK(profit_per_taxi, profit, emptyTaxiCount, cellNo,10, iij_timestamp)
+select *
+insert into profitOutputStream ;
 
 
-define function frequentK[JAVASCRIPT] return object {
-    var pickCell = data[0];
-    var dropCell = data[1];
-    var maxToKeep = 10;
-    var timeStamp = data[2];
+@info(name = 'query10')
+from profitOutputStream[duplicate == false]
+select pickup_datetime, dropoff_datetime,
+profitable_cell_id_1, empty_taxies_in_cell_id_1, median_profit_in_cell_id_1, profitability_of_cell_1,
+profitable_cell_id_2, empty_taxies_in_cell_id_2, median_profit_in_cell_id_2, profitability_of_cell_2,
+profitable_cell_id_3, empty_taxies_in_cell_id_3, median_profit_in_cell_id_3, profitability_of_cell_3,
+profitable_cell_id_4, empty_taxies_in_cell_id_4, median_profit_in_cell_id_4, profitability_of_cell_4,
+profitable_cell_id_5, empty_taxies_in_cell_id_5, median_profit_in_cell_id_5, profitability_of_cell_5,
+profitable_cell_id_6, empty_taxies_in_cell_id_6, median_profit_in_cell_id_6, profitability_of_cell_6,
+profitable_cell_id_7, empty_taxies_in_cell_id_7, median_profit_in_cell_id_7, profitability_of_cell_7,
+profitable_cell_id_8, empty_taxies_in_cell_id_8, median_profit_in_cell_id_8, profitability_of_cell_8,
+profitable_cell_id_9, empty_taxies_in_cell_id_9, median_profit_in_cell_id_9, profitability_of_cell_9,
+profitable_cell_id_10, empty_taxies_in_cell_id_10, median_profit_in_cell_id_10, profitability_of_cell_10, iij_timestamp
+insert into outputStream
 
-    return {
-        "name": "aaa",
-        "timeStamp": timeStamp
-    };
-};
-
-@sink(type='file', @map(type='json'), file.uri='C:/foo/low_productions.txt')
-@sink(type='http-service-response', @map(type='json' ), source.id="get-trip", message.id='{{MessageId}}')
-define stream myStream (MessageId string, obj object);
-
-@info(name = 'get count stream queryy')
-from Trip#window.externalTime(DropoffTime, 30 min)
-select MessageId, PickCell , DropCell,  PickupTimeOrig, DropoffTimeOrig, EventTimestamp
-insert all events  into countStream;
-
-from countStream
-    select MessageId , frequentK(PickCell, DropCell, EventTimestamp) as obj
-    insert all events into myStream;
-
-
--- @info(name = 'Main Query')
--- from countStream
---select frequentK(PickCell, DropCell, EventTimestamp) as
- --insert all into OutputStream;
-
--- from recentCountStream select pickup_datetime_org, dropoff_datetime_org, startCell1 ,endCell1, startCell2, endCell2, startCell3 ,endCell3, startCell4, endCell4, startCell5, endCell5, startCell6, endCell6,
--- startCell7 ,endCell7 , startCell8, endCell8, startCell9, endCell9, startCell10, endCell10, iij_timestamp
--- insert into outputStream
 
 

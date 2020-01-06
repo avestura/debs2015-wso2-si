@@ -7,6 +7,7 @@ using GrandChallange.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.IO;
+using GrandChallange.EventWebService.Models;
 
 namespace GrandChallange.EventWebService.Controllers
 {
@@ -85,7 +86,7 @@ namespace GrandChallange.EventWebService.Controllers
         public string AggregateLocation((string pick, string drop) location) => $"{location.pick}-{location.drop}";
 
         [HttpPost]
-        public string Post(Wso2Request req)
+        public string Post(Wso2Request<Wso2Model> req)
         {
 
             var aggregatedCells = req.Event.AggregatedCells;
@@ -102,17 +103,14 @@ namespace GrandChallange.EventWebService.Controllers
 
             return "OK";
         }
+
+        public class Wso2Model
+        {
+            public string AggregatedCells { get; set; }
+
+            public long Timestamp { get; set; }
+        }
     }
 
-    public class Wso2Request
-    {
-        public Wso2Model Event { get; set; }
-    }
 
-    public class Wso2Model
-    {
-        public string AggregatedCells { get; set; }
-
-        public long Timestamp { get; set; }
-    }
 }

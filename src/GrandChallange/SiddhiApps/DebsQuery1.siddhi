@@ -2,7 +2,7 @@
 @App:description('Queries for DEBS Query 1')
 
 @source(type = 'http-service', source.id="get-TripEvent", receiver.url = "http://0.0.0.0:8006/q1", basic.auth.enabled = "false",
-	@map(type = 'json', @attributes(MessageId='trp:messageId',
+    @map(type = 'json', @attributes(MessageId='trp:messageId',
                                         PickupTime='$.event.PickupTime',
                                         DropoffTime='$.event.DropoffTime',
                                         PickupTimeOrig='$.event.PickupTimeOrig',

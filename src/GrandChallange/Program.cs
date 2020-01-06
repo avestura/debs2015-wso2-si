@@ -27,57 +27,54 @@ namespace GrandChallange
             Console.ReadKey();
         }
 
-        public void ReadInput() 
+        public void ReadInput()
         {
-            TimeStamp timeStamp = new TimeStamp();
             FirstQueryInputModel newInput;
 
-            using (var reader = new StreamReader(csvPath))
-            using (var csv = new CsvReader(reader))
+            using var reader = new StreamReader(csvPath);
+            using var csv = new CsvReader(reader);
+            csv.Configuration.HasHeaderRecord = false;
+
+            while (csv.Read())
             {
-                csv.Configuration.HasHeaderRecord = false;
-
-                while (csv.Read()) 
+                try
                 {
-                    try
+                    var record = csv.GetRecord<DataModel>();
+
+                    var pickUpLocation = new TaxiLocation
+                        (
+                            (double.Parse(record.PickupLongitude), double.Parse(record.PickupLatitude)),
+                            QueryRespect.RespectQuery1
+                        );
+
+                    var dropOffLocation = new TaxiLocation
+                        (
+                            new Coordinates(double.Parse(record.DropoffLongitude), double.Parse(record.DropoffLatitude)),
+                            QueryRespect.RespectQuery1
+                        );
+
+                    newInput = new FirstQueryInputModel
                     {
-                        var record = csv.GetRecord<DataModel>();
+                        PickupTime = record.PickupDatetime.GetUnixTime(),
+                        DropoffTime = record.DropoffDatetime.GetUnixTime(),
+                        PickupTimeOrig = record.PickupDatetime,
+                        DropoffTimeOrig = record.DropoffDatetime,
+                        PickCell = pickUpLocation.CellId,
+                        DropCell = dropOffLocation.CellId,
+                        EventTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                    };
 
-                        var pickUpLocation = new TaxiLocation
-                            (
-                                new Coordinates(double.Parse(record.PickupLongitude), double.Parse(record.PickupLatitude)),
-                                QueryRespect.RespectQuery1
-                            );
-
-                        var dropOffLocation = new TaxiLocation
-                            (
-                                new Coordinates(double.Parse(record.DropoffLongitude), double.Parse(record.DropoffLatitude)),
-                                QueryRespect.RespectQuery1
-                            );
-
-                        newInput = new FirstQueryInputModel
-                        {
-                            PickupTime = timeStamp.GetUnixTime(record.PickupDatetime),
-                            DropoffTime = timeStamp.GetUnixTime(record.DropoffDatetime),
-                            PickupTimeOrig = record.PickupDatetime,
-                            DropoffTimeOrig = record.DropoffDatetime,
-                            PickCell = pickUpLocation.CellId,
-                            DropCell = dropOffLocation.CellId,
-                            EventTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                        };
-
-                        var jsonModel = new
-                        {
-                            @event = newInput
-                        };
-
-                        SendEventAsync(JsonSerializer.Serialize(jsonModel));
-                    }
-                    catch (Exception ex)
+                    var jsonModel = new
                     {
-                        string dd = ex.Message;
-                        continue;
-                    }
+                        @event = newInput
+                    };
+
+                    SendEventAsync(JsonSerializer.Serialize(jsonModel));
+                }
+                catch (Exception ex)
+                {
+                    string dd = ex.Message;
+                    continue;
                 }
             }
         }
@@ -104,7 +101,7 @@ namespace GrandChallange
                 Console.WriteLine("Done :)");
                 */
 
-                
+
 
                 webClient.Headers[HttpRequestHeader.ContentType] = "application/json";
                 //webClient.UseDefaultCredentials = true;
@@ -113,7 +110,7 @@ namespace GrandChallange
 
                 Console.WriteLine(HtmlResult);
                 Console.WriteLine("Done :)");
-                
+
             }
 
             //await Task.Run(() =>

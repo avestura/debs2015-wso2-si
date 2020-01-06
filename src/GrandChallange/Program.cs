@@ -9,11 +9,11 @@ using System.Text.Json;
 
 namespace GrandChallange
 {
-    class Program
+    public class Program
     {
-        private string CSVPath = @"D:\University\Distributed Systems\dd.csv";
-        private readonly Uri URI = new Uri("http://172.17.8.167:8006/q1");
-
+        private string CSVPath = @"D:\University\Distributed Systems\DEBS2015\sorted_data.csv";
+        private readonly Uri FirstQueryUri = new Uri("http://localhost:8006/q1");
+        private readonly Uri SecondQueryUri = new Uri("http://172.17.8.167:8006/q2");
         private readonly Uri ServiceQuery1Frequent = new Uri("https://localhost:5001/Query1Frequent");
 
         static void Main(string[] args)
@@ -21,8 +21,8 @@ namespace GrandChallange
             Program program = new Program();
 
             Console.WriteLine("+++++++++++++++++++++++++++++++++++++++++++ \n" +
-                "| Welcom to Grand Challenge 2015 solution | \n" +
-                "+++++++++++++++++++++++++++++++++++++++++++");
+                              "| Welcom to Grand Challenge 2015 solution | \n" +
+                              "+++++++++++++++++++++++++++++++++++++++++++");
 
             bool correctInput = false;
 
@@ -48,7 +48,7 @@ namespace GrandChallange
                 }
 
                 Console.WriteLine("File fully read.\nResult:\n");
-                program.ShowResult();
+               // program.ShowResult();
             }
         }
 
@@ -76,7 +76,7 @@ namespace GrandChallange
                         (
                             new Coordinates(double.Parse(record.DropoffLongitude), double.Parse(record.DropoffLatitude)),
                             QueryRespect.RespectQuery1
-                        );
+                        );                    
 
                     newInput = new FirstQueryInputModel
                     {
@@ -94,7 +94,9 @@ namespace GrandChallange
                         @event = newInput
                     };
 
-                    SendEvent(JsonSerializer.Serialize(jsonModel));
+                    SendEvent(JsonSerializer.Serialize(jsonModel), FirstQueryUri);
+
+                    Console.WriteLine("Send event");
                 }
                 catch (Exception ex)
                 {
@@ -150,7 +152,7 @@ namespace GrandChallange
                             @event = newInput
                         };
 
-                        SendEvent(JsonSerializer.Serialize(jsonModel));
+                        SendEvent(JsonSerializer.Serialize(jsonModel), SecondQueryUri);
                     }
                     catch (Exception ex)
                     {
@@ -160,17 +162,22 @@ namespace GrandChallange
             }
         }
 
-        private void SendEvent(string json)
+        private void SendEvent(string json, Uri uri)
         {
             if (string.IsNullOrEmpty(json))
             {
                 throw new ArgumentNullException(nameof(json));
             }
 
+            if (uri == null)
+            {
+                throw new ArgumentNullException(nameof(uri));
+            }
+
             using WebClient webClient = new WebClient();
 
             webClient.Headers[HttpRequestHeader.ContentType] = "application/json";
-            webClient.UploadStringAsync(URI, json);
+            webClient.UploadStringAsync(uri, json);
         }
 
         private void ShowResult()

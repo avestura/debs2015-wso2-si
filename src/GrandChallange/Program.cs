@@ -60,6 +60,8 @@ namespace GrandChallange
             using var csv = new CsvReader(reader);
             csv.Configuration.HasHeaderRecord = false;
 
+            int sendedEventCount = 1;
+            int allReadedRowCount = 1;
             while (csv.Read())
             {
                 try
@@ -96,12 +98,17 @@ namespace GrandChallange
 
                     SendEvent(JsonSerializer.Serialize(jsonModel), FirstQueryUri);
 
-                    Console.WriteLine("Send event");
+                    Console.Write("\r{0} event send from {1}", sendedEventCount, allReadedRowCount);
+                    sendedEventCount++;
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Error: " + ex.Message);
+                    //Console.WriteLine("Error: " + ex.Message);
                     continue;
+                }
+                finally
+                {
+                    allReadedRowCount++;
                 }
             }
         }

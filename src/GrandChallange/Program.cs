@@ -12,7 +12,9 @@ namespace GrandChallange
     class Program
     {
         private string CSVPath = @"D:\University\Distributed Systems\dd.csv";
-        private Uri URI = new Uri("http://172.17.8.167:8006/q1");
+        private readonly Uri URI = new Uri("http://172.17.8.167:8006/q1");
+
+        private readonly Uri ServiceQuery1Frequent = new Uri("https://localhost:5001/Query1Frequent");
 
         static void Main(string[] args)
         {
@@ -92,7 +94,7 @@ namespace GrandChallange
                         @event = newInput
                     };
 
-                    SendEventAsync(JsonSerializer.Serialize(jsonModel));
+                    SendEvent(JsonSerializer.Serialize(jsonModel));
                 }
                 catch (Exception ex)
                 {
@@ -148,29 +150,27 @@ namespace GrandChallange
                             @event = newInput
                         };
 
-                        SendEventAsync(JsonSerializer.Serialize(jsonModel));
+                        SendEvent(JsonSerializer.Serialize(jsonModel));
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine("Error: " + ex.Message);
-                        continue;
                     }
                 }
             }
         }
 
-        private void SendEventAsync(string json)
+        private void SendEvent(string json)
         {
             if (string.IsNullOrEmpty(json))
             {
                 throw new ArgumentNullException(nameof(json));
             }
 
-            using (WebClient webClient = new WebClient())
-            {
-                webClient.Headers[HttpRequestHeader.ContentType] = "application/json";
-                webClient.UploadStringAsync(URI, json);
-            }
+            using WebClient webClient = new WebClient();
+
+            webClient.Headers[HttpRequestHeader.ContentType] = "application/json";
+            webClient.UploadStringAsync(URI, json);
         }
 
         private void ShowResult()

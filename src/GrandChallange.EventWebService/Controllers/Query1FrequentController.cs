@@ -25,7 +25,6 @@ namespace GrandChallange.EventWebService.Controllers
             _logger = logger;
         }
 
-
         [HttpGet]
         public Query1Result Get(long reqTimestamp, string pickTime, string dropTime)
         {
@@ -69,8 +68,7 @@ namespace GrandChallange.EventWebService.Controllers
                 EndCellId7 = (query.Length > 6) ? ExtractLocation(query[6].Key).drop : null,
                 EndCellId8 = (query.Length > 7) ? ExtractLocation(query[7].Key).drop : null,
                 EndCellId9 = (query.Length > 8) ? ExtractLocation(query[8].Key).drop : null,
-                EndCellId10 = (query.Length > 9) ? ExtractLocation(query[9].Key).drop : null,
-
+                EndCellId10 = (query.Length > 9) ? ExtractLocation(query[9].Key).drop : null
             };
         }
 

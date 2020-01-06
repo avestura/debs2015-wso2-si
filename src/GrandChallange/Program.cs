@@ -110,54 +110,52 @@ namespace GrandChallange
         {
             SecondQueryInputModel newInput;
 
-            using (var reader = new StreamReader(CSVPath))
-            using (var csv = new CsvReader(reader))
+            using var reader = new StreamReader(CSVPath);
+            using var csv = new CsvReader(reader);
+            csv.Configuration.HasHeaderRecord = false;
+
+            while (csv.Read())
             {
-                csv.Configuration.HasHeaderRecord = false;
-
-                while (csv.Read())
+                try
                 {
-                    try
+                    var record = csv.GetRecord<DataModel>();
+
+                    var pickUpLocation = new TaxiLocation
+                        (
+                            new Coordinates(double.Parse(record.PickupLongitude), double.Parse(record.PickupLatitude)),
+                            QueryRespect.RespectQuery2
+                        );
+
+                    var dropOffLocation = new TaxiLocation
+                        (
+                            new Coordinates(double.Parse(record.DropoffLongitude), double.Parse(record.DropoffLatitude)),
+                            QueryRespect.RespectQuery2
+                        );
+
+                    newInput = new SecondQueryInputModel
                     {
-                        var record = csv.GetRecord<DataModel>();
+                        Medallion = record.Medallion,
+                        PickupTime = record.PickupDatetime.GetUnixTime(),
+                        DropoffTime = record.DropoffDatetime.GetUnixTime(),
+                        PickCell = pickUpLocation.CellId,
+                        DropCell = dropOffLocation.CellId,
+                        EventTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        PickupTimeOrig = record.PickupDatetime,
+                        DropoffTimeOrig = record.DropoffDatetime,
+                        FareAmount = float.Parse(record.FareAmount),
+                        TipAmount = float.Parse(record.TipAmount)
+                    };
 
-                        var pickUpLocation = new TaxiLocation
-                            (
-                                new Coordinates(double.Parse(record.PickupLongitude), double.Parse(record.PickupLatitude)),
-                                QueryRespect.RespectQuery2
-                            );
-
-                        var dropOffLocation = new TaxiLocation
-                            (
-                                new Coordinates(double.Parse(record.DropoffLongitude), double.Parse(record.DropoffLatitude)),
-                                QueryRespect.RespectQuery2
-                            );
-
-                        newInput = new SecondQueryInputModel
-                        {
-                            Medallion = record.Medallion,
-                            PickupTime = record.PickupDatetime.GetUnixTime(),
-                            DropoffTime = record.DropoffDatetime.GetUnixTime(),
-                            PickCell = pickUpLocation.CellId,
-                            DropCell = dropOffLocation.CellId,
-                            EventTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                            PickupTimeOrig = record.PickupDatetime,
-                            DropoffTimeOrig = record.DropoffDatetime,
-                            FareAmount = float.Parse(record.FareAmount),
-                            TipAmount = float.Parse(record.TipAmount)
-                        };
-
-                        var jsonModel = new
-                        {
-                            @event = newInput
-                        };
+                    var jsonModel = new
+                    {
+                        @event = newInput
+                    };
 
                         SendEvent(JsonSerializer.Serialize(jsonModel), SecondQueryUri);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine("Error: " + ex.Message);
-                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error: " + ex.Message);
                 }
             }
         }

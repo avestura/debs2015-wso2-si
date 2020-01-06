@@ -16,7 +16,7 @@ namespace GrandChallange.Models
 
         [Index(3)]
         public float EmptyTaxiesInCellId1 { get; set; }
-    
+
         [Index(4)]
         public float MedianProfitInCellId1 { get; set; }
 
@@ -133,14 +133,6 @@ namespace GrandChallange.Models
 
         [Index(42)]
         public string Delay { get; set; }
-
-
-
-
-
-
-
-
 
     }
 }

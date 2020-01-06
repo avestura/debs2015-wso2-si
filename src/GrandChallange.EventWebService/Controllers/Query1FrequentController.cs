@@ -7,6 +7,7 @@ using GrandChallange.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.IO;
+using GrandChallange.EventWebService.Models;
 
 namespace GrandChallange.EventWebService.Controllers
 {
@@ -20,21 +21,24 @@ namespace GrandChallange.EventWebService.Controllers
         private static Dictionary<string, List<long>> InMemoryData { get; set; }
             = new Dictionary<string, List<long>>();
 
+        public static long lastReqTimestamp = 0;
+
         public Query1FrequentController(ILogger<Query1FrequentController> logger)
         {
             _logger = logger;
         }
 
-
         [HttpGet]
         public Query1Result Get(long reqTimestamp, string pickTime, string dropTime)
         {
-            var now = DateTime.Now;
-            var _30minAgo = now.ThirtyMinAgo();
+            lastReqTimestamp = (reqTimestamp > lastReqTimestamp) ? reqTimestamp : lastReqTimestamp;
+
+            var now = lastReqTimestamp;
+            var _30minAgo = now - 30 * 60 * 1000;
 
             InMemoryData = InMemoryData.ToDictionary(
                 x => x.Key,
-                x => x.Value.Where(y => y > _30minAgo.GetUnixTime()).ToList()
+                x => x.Value.Where(y => y > _30minAgo).ToList()
             )
             .OrderByDescending(x => x.Value.Count)
              .ToDictionary(
@@ -46,7 +50,7 @@ namespace GrandChallange.EventWebService.Controllers
 
             return new Query1Result
             {
-                Delay = (now.GetUnixTime() - reqTimestamp).ToString(),
+                Delay = (now - reqTimestamp).ToString(),
                 PickupDatetime = pickTime,
                 DropoffDatetime = dropTime,
                 StartCellId1 = (query.Length > 0) ? ExtractLocation(query[0].Key).pick : null,
@@ -69,8 +73,7 @@ namespace GrandChallange.EventWebService.Controllers
                 EndCellId7 = (query.Length > 6) ? ExtractLocation(query[6].Key).drop : null,
                 EndCellId8 = (query.Length > 7) ? ExtractLocation(query[7].Key).drop : null,
                 EndCellId9 = (query.Length > 8) ? ExtractLocation(query[8].Key).drop : null,
-                EndCellId10 = (query.Length > 9) ? ExtractLocation(query[9].Key).drop : null,
-
+                EndCellId10 = (query.Length > 9) ? ExtractLocation(query[9].Key).drop : null
             };
         }
 
@@ -83,7 +86,7 @@ namespace GrandChallange.EventWebService.Controllers
         public string AggregateLocation((string pick, string drop) location) => $"{location.pick}-{location.drop}";
 
         [HttpPost]
-        public string Post(Wso2Request req)
+        public string Post(Wso2Request<Wso2Model> req)
         {
 
             var aggregatedCells = req.Event.AggregatedCells;
@@ -100,17 +103,14 @@ namespace GrandChallange.EventWebService.Controllers
 
             return "OK";
         }
+
+        public class Wso2Model
+        {
+            public string AggregatedCells { get; set; }
+
+            public long Timestamp { get; set; }
+        }
     }
 
-    public class Wso2Request
-    {
-        public Wso2Model Event { get; set; }
-    }
 
-    public class Wso2Model
-    {
-        public string AggregatedCells { get; set; }
-
-        public long Timestamp { get; set; }
-    }
 }

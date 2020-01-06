@@ -33,7 +33,18 @@ define stream reqMedianStream (CurrentProfit float, Now long);
 define stream getMedianStream (profit float);
 
 @primaryKey('cellNo')
-define table emptyTaxiCountTable (cellNo string , emptyTaxiCount long);
+define table emptyTaxiCountTable (cellNo string, emptyTaxiCount long);
+
+@sink(type='http' , publisher.url='http://localhost:5000/Query2Frequent', method='POST', @map(type='json'))
+define stream profitOutputStream (
+    CellNumber string,
+    MedianProfit float,
+    EmptyTaxis long,
+    PickupTime long,
+    DropoffTime long,
+    Profitability float,
+    Timestamp long
+);
 
 
 @info(name = 'query1')
@@ -48,7 +59,7 @@ select
     iij_timestamp
  insert into cell_based_taxi_trips;
 
- @info(name = 'query2')
+@info(name = 'query2')
 from cell_based_taxi_trips
 insert into filtered_cell_based_taxi_trips;
 
@@ -94,29 +105,27 @@ insert into profitRawData;
 
 @info(name = 'query8')
 from profitRawData[emptyTaxiCount != 0]
-select cellNo, profit, emptyTaxiCount,  pickup_datetime, dropoff_datetime, profit/emptyTaxiCount as profit_per_taxi, iij_timestamp
+select
+    cellNo,
+    profit,
+    emptyTaxiCount,
+    pickup_datetime,
+    dropoff_datetime,
+    profit/emptyTaxiCount as profit_per_taxi,
+    iij_timestamp
 insert into finalProfitStream;
 
 @info(name = 'query9')
-from finalProfitStream#MaxK:getMaxK(profit_per_taxi, profit, emptyTaxiCount, cellNo,10, iij_timestamp)
-select *
+from finalProfitStream
+select cellNo as CellNumber,
+       profit as MedianProfit,
+       emptyTaxiCount as EmptyTaxis,
+       pickup_datetime as PickupTime,
+       dropoff_datetime as DropoffTime,
+       profit_per_taxi as Profitability,
+       iij_timestamp as Timestamp
 insert into profitOutputStream ;
 
-
-@info(name = 'query10')
-from profitOutputStream[duplicate == false]
-select pickup_datetime, dropoff_datetime,
-profitable_cell_id_1, empty_taxies_in_cell_id_1, median_profit_in_cell_id_1, profitability_of_cell_1,
-profitable_cell_id_2, empty_taxies_in_cell_id_2, median_profit_in_cell_id_2, profitability_of_cell_2,
-profitable_cell_id_3, empty_taxies_in_cell_id_3, median_profit_in_cell_id_3, profitability_of_cell_3,
-profitable_cell_id_4, empty_taxies_in_cell_id_4, median_profit_in_cell_id_4, profitability_of_cell_4,
-profitable_cell_id_5, empty_taxies_in_cell_id_5, median_profit_in_cell_id_5, profitability_of_cell_5,
-profitable_cell_id_6, empty_taxies_in_cell_id_6, median_profit_in_cell_id_6, profitability_of_cell_6,
-profitable_cell_id_7, empty_taxies_in_cell_id_7, median_profit_in_cell_id_7, profitability_of_cell_7,
-profitable_cell_id_8, empty_taxies_in_cell_id_8, median_profit_in_cell_id_8, profitability_of_cell_8,
-profitable_cell_id_9, empty_taxies_in_cell_id_9, median_profit_in_cell_id_9, profitability_of_cell_9,
-profitable_cell_id_10, empty_taxies_in_cell_id_10, median_profit_in_cell_id_10, profitability_of_cell_10, iij_timestamp
-insert into outputStream
 
 
 

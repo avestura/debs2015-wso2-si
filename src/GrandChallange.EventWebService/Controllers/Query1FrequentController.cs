@@ -15,7 +15,6 @@ namespace GrandChallange.EventWebService.Controllers
     [Route("[controller]")]
     public class Query1FrequentController : ControllerBase
     {
-
         private readonly ILogger<Query1FrequentController> _logger;
 
         private static Dictionary<string, List<long>> InMemoryData { get; set; }
@@ -37,7 +36,6 @@ namespace GrandChallange.EventWebService.Controllers
         [HttpGet]
         public Query1Result Get(long reqTimestamp)
         {
-
             var query = QueryResult;
 
             return new Query1Result
@@ -91,7 +89,6 @@ namespace GrandChallange.EventWebService.Controllers
                 TriggeredDropoffTime = dropTime.ToString();
                 TriggeredPickupTime = pickTime.ToString();
             }
-
         }
 
         public (string pick, string drop) ExtractLocation(string location)
@@ -105,7 +102,6 @@ namespace GrandChallange.EventWebService.Controllers
         [HttpPost]
         public string Post(Wso2Request<Wso2Model> req)
         {
-
             var aggregatedCells = req.Event.AggregatedCells;
             var timestamp = req.Event.Timestamp;
 
@@ -134,6 +130,4 @@ namespace GrandChallange.EventWebService.Controllers
             public long Timestamp { get; set; }
         }
     }
-
-
 }

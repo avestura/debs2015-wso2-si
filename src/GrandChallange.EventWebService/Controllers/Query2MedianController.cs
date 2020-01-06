@@ -12,7 +12,6 @@ namespace GrandChallange.EventWebService.Controllers
     [ApiController]
     public class Query2MedianController : ControllerBase
     {
-
         public List<(float profit, long timestamp)> Data { get; set; }
             = new List<(float, long)>();
 

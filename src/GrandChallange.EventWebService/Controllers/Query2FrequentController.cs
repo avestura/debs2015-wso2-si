@@ -15,10 +15,9 @@ namespace GrandChallange.EventWebService.Controllers
     [Route("[controller]")]
     public class Query2FrequentController : ControllerBase
     {
-
         private readonly ILogger<Query2FrequentController> _logger;
 
-        private static Dictionary<string, Wso2Model> InMemoryData { get; set; }
+        private static Dictionary<string, Wso2Model> InMemoryData { get; }
             = new Dictionary<string, Wso2Model>();
 
         private KeyValuePair<string, Wso2Model>[] QueryResult { get; set; }
@@ -87,8 +86,7 @@ namespace GrandChallange.EventWebService.Controllers
                 ProfitableCellId7 = (query.Length > 6) ? (query[6].Value).CellNumber : null,
                 ProfitableCellId8 = (query.Length > 7) ? (query[7].Value).CellNumber : null,
                 ProfitableCellId9 = (query.Length > 8) ? (query[8].Value).CellNumber : null,
-                ProfitableCellId10 = (query.Length > 9) ? (query[9].Value).CellNumber : null,
-
+                ProfitableCellId10 = (query.Length > 9) ? (query[9].Value).CellNumber : null
             };
         }
 
@@ -108,7 +106,6 @@ namespace GrandChallange.EventWebService.Controllers
         [HttpPost]
         public string Post(Wso2Request<Wso2Model> req)
         {
-
             var ev = req.Event;
             var cell = ev.CellNumber;
 

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.IO;
 using GrandChallange.EventWebService.Models;
+using System.Collections.Concurrent;
 
 namespace GrandChallange.EventWebService.Controllers
 {
@@ -17,8 +18,8 @@ namespace GrandChallange.EventWebService.Controllers
     {
         private readonly ILogger<Query2FrequentController> _logger;
 
-        private static Dictionary<string, Wso2Model> InMemoryData { get; }
-            = new Dictionary<string, Wso2Model>();
+        private static ConcurrentDictionary<string, Wso2Model> InMemoryData { get; }
+            = new ConcurrentDictionary<string, Wso2Model>();
 
         private KeyValuePair<string, Wso2Model>[] QueryResult { get; set; }
 

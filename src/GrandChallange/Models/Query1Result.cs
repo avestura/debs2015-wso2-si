@@ -74,5 +74,26 @@ namespace GrandChallange.Models
         [Index(22)]
         public string Delay { get; set; }
 
+        public override string ToString()
+        {
+            DateTime start = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            DateTime pickupTime = start.AddMilliseconds(long.Parse(PickupDatetime)).ToLocalTime();
+            DateTime droffTimedate = start.AddMilliseconds(long.Parse(DropoffDatetime)).ToLocalTime();
+
+            return "Pickup datetime: " + pickupTime.ToString() + "\n" +
+                "Dropoof datetime: " + droffTimedate.ToString() + "\n" +
+                "No.1 Start cell id: " + StartCellId1 + " End cell id:" + EndCellId1 + "\n" +
+                "No.2 Start cell id: " + StartCellId2 + " End cell id:" + EndCellId2 + "\n" +
+                "No.3 Start cell id: " + StartCellId3 + " End cell id:" + EndCellId3 + "\n" +
+                "No.4 Start cell id: " + StartCellId4 + " End cell id:" + EndCellId4 + "\n" +
+                "No.5 Start cell id: " + StartCellId5 + " End cell id:" + EndCellId5 + "\n" +
+                "No.6 Start cell id: " + StartCellId6 + " End cell id:" + EndCellId6 + "\n" +
+                "No.7 Start cell id: " + StartCellId7 + " End cell id:" + EndCellId7 + "\n" +
+                "No.8 Start cell id: " + StartCellId8 + " End cell id:" + EndCellId8 + "\n" +
+                "No.9 Start cell id: " + StartCellId9 + " End cell id:" + EndCellId9 + "\n" +
+                "No.10 Start cell id: " + StartCellId10 + " End cell id:" + EndCellId10 + "\n" +
+                "Delay: " + Delay + " ms\n";
+        }
+
     }
 }

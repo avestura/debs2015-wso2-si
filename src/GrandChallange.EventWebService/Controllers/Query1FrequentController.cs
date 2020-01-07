@@ -106,11 +106,11 @@ namespace GrandChallange.EventWebService.Controllers
 
             if (InMemoryData.ContainsKey(aggregatedCells))
             {
-                InMemoryData[aggregatedCells].Add(timestamp);
+                InMemoryData[aggregatedCells].Add(req.Event.DropoffTime);
             }
             else
             {
-                InMemoryData[aggregatedCells] = new List<long>() { timestamp };
+                InMemoryData[aggregatedCells] = new List<long>() { req.Event.DropoffTime };
             }
 
             UpdateData(timestamp, req.Event.PickupTime, req.Event.DropoffTime, aggregatedCells);

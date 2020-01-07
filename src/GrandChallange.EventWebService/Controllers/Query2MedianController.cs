@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using GrandChallange.EventWebService.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace GrandChallange.EventWebService.Controllers
 {
@@ -12,8 +13,9 @@ namespace GrandChallange.EventWebService.Controllers
     [ApiController]
     public class Query2MedianController : ControllerBase
     {
-        public List<(float profit, long timestamp)> Data { get; set; }
+        public static List<(float profit, long timestamp)> Data { get; set; }
             = new List<(float, long)>();
+
 
         [HttpGet]
         public object Get(Wso2Request<Wso2Model> input)
@@ -25,10 +27,8 @@ namespace GrandChallange.EventWebService.Controllers
 
             return new
             {
-                events = new
-                {
-                    profit = Median()
-                }
+                profit = Median()
+
             };
         }
 

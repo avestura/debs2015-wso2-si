@@ -18,10 +18,10 @@ namespace GrandChallange.EventWebService.Controllers
     {
         private readonly ILogger<Query1FrequentController> _logger;
 
-        private static ConcurrentDictionary<string, List<long>> InMemoryData { get; set; }
+        private static ConcurrentDictionary<string, List<long>> InMemoryData { get;  }
             = new ConcurrentDictionary<string, List<long>>();
 
-        private KeyValuePair<string, List<long>>[] QueryResult { get; set; }
+        private static KeyValuePair<string, List<long>>[] QueryResult { get; set; }
 
         public static long QueryTime = 0;
 
@@ -104,7 +104,6 @@ namespace GrandChallange.EventWebService.Controllers
         [HttpPost]
         public string Post(Wso2Request<Wso2Model> req)
         {
-            _logger.LogInformation("New Post");
             var aggregatedCells = req.Event.AggregatedCells;
             var timestamp = req.Event.Timestamp;
 

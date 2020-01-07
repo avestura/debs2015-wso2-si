@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Text.Json;
+using System.Timers;
 
 namespace GrandChallange
 {
@@ -15,6 +16,19 @@ namespace GrandChallange
         private readonly Uri FirstQueryUri = new Uri("http://localhost:8006/q1");
         private readonly Uri SecondQueryUri = new Uri("http://172.17.8.167:8006/q2");
         private readonly Uri ServiceQuery1Frequent = new Uri("https://localhost:5001/Query1Frequent");
+
+        Timer timer = new Timer(1000);
+
+        public Program()
+        {
+            timer.Start();
+            timer.Elapsed += new ElapsedEventHandler(t_Elapsed);
+        }
+
+        private void t_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            ShowResult();
+        }
 
         static void Main(string[] args)
         {
@@ -48,7 +62,7 @@ namespace GrandChallange
                 }
 
                 Console.WriteLine("File fully read.\nResult:\n");
-               // program.ShowResult();
+                // program.ShowResult();
             }
         }
 
@@ -78,7 +92,7 @@ namespace GrandChallange
                         (
                             new Coordinates(double.Parse(record.DropoffLongitude), double.Parse(record.DropoffLatitude)),
                             QueryRespect.RespectQuery1
-                        );                    
+                        );
 
                     newInput = new FirstQueryInputModel
                     {
@@ -158,7 +172,7 @@ namespace GrandChallange
                         @event = newInput
                     };
 
-                        SendEvent(JsonSerializer.Serialize(jsonModel), SecondQueryUri);
+                    SendEvent(JsonSerializer.Serialize(jsonModel), SecondQueryUri);
                 }
                 catch (Exception ex)
                 {
@@ -188,11 +202,8 @@ namespace GrandChallange
         private void ShowResult()
         {
             WebClient client = new WebClient();
-            string address = "http://localhost:8080/result.txt";
-            // Save the file to desktop for debugging
-            var desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            string fileName = desktop + "\\result.txt";
-            client.DownloadFile(address, fileName);
+            string address = "https://localhost:5001/Query1Frequent?reqTimestamp=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            string result = client.DownloadString(address);
         }
     }
 }

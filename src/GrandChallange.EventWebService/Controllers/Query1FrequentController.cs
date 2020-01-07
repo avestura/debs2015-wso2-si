@@ -71,19 +71,14 @@ namespace GrandChallange.EventWebService.Controllers
         private void UpdateData(long reqTimestamp, long pickTime, long dropTime, string key)
         {
             lastReqTimestamp = Math.Max(lastReqTimestamp, reqTimestamp) ;
-            var _30minAgo = reqTimestamp - (30 * 60 * 1000);
+            var _30minAgo = dropTime - (30 * 60 * 1000);
 
             foreach(var item in InMemoryData)
             {
                 InMemoryData[item.Key] = InMemoryData[key].Where(y => y > _30minAgo).ToList();
             }
 
-            QueryResult = InMemoryData.OrderByDescending(x => x.Value.Count)
-             .ToDictionary(
-                x => x.Key,
-                x => x.Value
-             )
-             .Take(10).ToArray();
+            QueryResult = InMemoryData.OrderByDescending(x => x.Value.Count).Take(10).ToArray();
 
             if(QueryResult.Any(x => x.Key == key))
             {

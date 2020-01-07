@@ -41,6 +41,9 @@ namespace GrandChallange.EventWebService.Controllers
         {
             var query = QueryResult;
 
+            if (query == null)
+                return new Query1Result();
+
             return new Query1Result
             {
                 Delay = (ReqLast - reqTimestamp).ToString(),
@@ -101,6 +104,7 @@ namespace GrandChallange.EventWebService.Controllers
         [HttpPost]
         public string Post(Wso2Request<Wso2Model> req)
         {
+            _logger.LogInformation("New Post");
             var aggregatedCells = req.Event.AggregatedCells;
             var timestamp = req.Event.Timestamp;
 
@@ -122,11 +126,12 @@ namespace GrandChallange.EventWebService.Controllers
         {
             public string AggregatedCells { get; set; }
 
+            public long Timestamp { get; set; }
+
             public long PickupTime { get; set; }
 
             public long DropoffTime { get; set; }
 
-            public long Timestamp { get; set; }
         }
     }
 }

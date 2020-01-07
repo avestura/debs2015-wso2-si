@@ -23,7 +23,9 @@ namespace GrandChallange.EventWebService.Controllers
 
         private KeyValuePair<string, List<long>>[] QueryResult { get; set; }
 
-        public static long lastReqTimestamp = 0;
+        public static long QueryTime = 0;
+
+        public static long ReqLast = 0;
 
         private static string TriggeredPickupTime { get; set; }
 
@@ -41,7 +43,7 @@ namespace GrandChallange.EventWebService.Controllers
 
             return new Query1Result
             {
-                Delay = (lastReqTimestamp - reqTimestamp).ToString(),
+                Delay = (ReqLast - reqTimestamp).ToString(),
                 PickupDatetime = TriggeredPickupTime,
                 DropoffDatetime = TriggeredDropoffTime,
                 StartCellId1 = (query.Length > 0) ? ExtractLocation(query[0].Key).pick : null,
@@ -70,8 +72,9 @@ namespace GrandChallange.EventWebService.Controllers
 
         private void UpdateData(long reqTimestamp, long pickTime, long dropTime, string key)
         {
-            lastReqTimestamp = Math.Max(lastReqTimestamp, reqTimestamp) ;
-            var _30minAgo = dropTime - (30 * 60 * 1000);
+            QueryTime = Math.Max(QueryTime, dropTime) ;
+            ReqLast = Math.Max(ReqLast, reqTimestamp);
+            var _30minAgo = QueryTime - (30 * 60 * 1000);
 
             foreach(var item in InMemoryData)
             {

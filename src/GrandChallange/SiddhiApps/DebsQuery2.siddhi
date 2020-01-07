@@ -26,13 +26,13 @@ define stream taxi_trips (
     tip_amount float,
     iij_timestamp long);
 
-@sink(type='http-call' , publisher.url='http://localhost:5000/Query2Median', sink.id='median', @map(type='json'))
+@sink(type='http-call' , method='POST', publisher.url='http://localhost:5000/Query2Median', sink.id='median', @map(type='json'))
 define stream reqMedianStream (CurrentProfit float, Now long);
 
 @source(type='http-call-response' , sink.id='median', @map(type='json'))
 define stream getMedianStream (profit float);
 
-@primaryKey('cellNo')
+@primaryKey('cellNo', 'emptyTaxiCount')
 define table emptyTaxiCountTable (cellNo string, emptyTaxiCount long);
 
 @sink(type='http' , publisher.url='http://localhost:5000/Query2Frequent', method='POST', @map(type='json'))
@@ -89,7 +89,7 @@ insert into taxiCountUpdateStream;
 from taxiCountUpdateStream
 select cellNo , sum(emptyTaxiCount) as emptyTaxiCount
 group by cellNo
-insert into emptyTaxiCountTable ;
+insert into emptyTaxiCountTable;
 
 @info(name = 'query7')
 from profitStream#window.length(0) join emptyTaxiCountTable

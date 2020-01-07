@@ -17,8 +17,8 @@ namespace GrandChallange.EventWebService.Controllers
             = new List<(float, long)>();
 
 
-        [HttpGet]
-        public object Get(Wso2Request<Wso2Model> input)
+        [HttpPost]
+        public object Post(Wso2Request<Wso2Model> input)
         {
             var ts = input.Event.Now;
             Data = Data.Where(x => x.timestamp > ts - 900000).ToList();
@@ -28,7 +28,6 @@ namespace GrandChallange.EventWebService.Controllers
             return new
             {
                 profit = Median()
-
             };
         }
 

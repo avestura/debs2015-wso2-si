@@ -78,7 +78,7 @@ namespace GrandChallange.EventWebService.Controllers
                 InMemoryData[item.Key] = InMemoryData[key].Where(y => y > _30minAgo).ToList();
             }
 
-            QueryResult = InMemoryData.OrderByDescending(x => x.Value.Count).Take(10).ToArray();
+            QueryResult = InMemoryData.ToArray().OrderByDescending(x => x.Value.Count).Take(10).ToArray();
 
             if(QueryResult.Any(x => x.Key == key))
             {

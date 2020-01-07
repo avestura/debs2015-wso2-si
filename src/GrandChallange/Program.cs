@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Timers;
 
 namespace GrandChallange
@@ -14,20 +15,27 @@ namespace GrandChallange
     {
         private string CSVPath = @"D:\University\Distributed Systems\DEBS2015\sorted_data.csv";
         private readonly Uri FirstQueryUri = new Uri("http://localhost:8006/q1");
-        private readonly Uri SecondQueryUri = new Uri("http://172.17.8.167:8006/q2");
+        private readonly Uri SecondQueryUri = new Uri("http://locahost:8006/q2");
         private readonly Uri ServiceQuery1Frequent = new Uri("https://localhost:5001/Query1Frequent");
 
-        Timer timer = new Timer(1000);
+
+        Timer FirstQueryResultTimer = new Timer(1000);
+        Timer SecondueryResultTimer = new Timer(1000);
 
         public Program()
         {
-            timer.Start();
-            timer.Elapsed += new ElapsedEventHandler(t_Elapsed);
+            FirstQueryResultTimer.Elapsed += new ElapsedEventHandler(FirstQueryResultTimer_Elapsed);
+            SecondueryResultTimer.Elapsed += new ElapsedEventHandler(SecondQueryResultTimer_Elapsed);
         }
 
-        private void t_Elapsed(object sender, ElapsedEventArgs e)
+        private void FirstQueryResultTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            ShowResult();
+            _ = ShowFirstQueryResult();
+        }
+
+        private void SecondQueryResultTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            _ = ShowSecondQueryResult();
         }
 
         static void Main(string[] args)
@@ -60,14 +68,12 @@ namespace GrandChallange
                         Console.WriteLine("Number was wrong!");
                         break;
                 }
-
-                Console.WriteLine("File fully read.\nResult:\n");
-                // program.ShowResult();
             }
         }
 
         private void RunFirstQuery()
         {
+            FirstQueryResultTimer.Start();
             FirstQueryInputModel newInput;
 
             using var reader = new StreamReader(CSVPath);
@@ -112,12 +118,11 @@ namespace GrandChallange
 
                     SendEvent(JsonSerializer.Serialize(jsonModel), FirstQueryUri);
 
-                    Console.Write("\r{0} event send from {1}", sendedEventCount, allReadedRowCount);
+                    // Console.Write("\r{0} event send from {1}", sendedEventCount, allReadedRowCount);
                     sendedEventCount++;
                 }
                 catch (Exception ex)
                 {
-                    //Console.WriteLine("Error: " + ex.Message);
                     continue;
                 }
                 finally
@@ -129,12 +134,15 @@ namespace GrandChallange
 
         private void RunSecondQuery()
         {
+            SecondueryResultTimer.Start();
             SecondQueryInputModel newInput;
 
             using var reader = new StreamReader(CSVPath);
             using var csv = new CsvReader(reader);
             csv.Configuration.HasHeaderRecord = false;
 
+            int sendedEventCount = 1;
+            int allReadedRowCount = 1;
             while (csv.Read())
             {
                 try
@@ -173,10 +181,17 @@ namespace GrandChallange
                     };
 
                     SendEvent(JsonSerializer.Serialize(jsonModel), SecondQueryUri);
+
+                    Console.Write("\r{0} event send from {1}", sendedEventCount, allReadedRowCount);
+                    sendedEventCount++;
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Error: " + ex.Message);
+                    continue;
+                }
+                finally
+                {
+                    allReadedRowCount++;
                 }
             }
         }
@@ -199,11 +214,60 @@ namespace GrandChallange
             webClient.UploadStringAsync(uri, json);
         }
 
-        private void ShowResult()
+        private async Task ShowFirstQueryResult()
         {
-            WebClient client = new WebClient();
-            string address = "https://localhost:5001/Query1Frequent?reqTimestamp=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            string result = client.DownloadString(address);
+            Query1Result preivous = new Query1Result();
+            await Task.Run(() =>
+            {
+                try
+                {
+                    WebClient client = new WebClient();
+                    string address = "https://localhost:5001/Query1Frequent?reqTimestamp=" +
+                    DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                    string resultJson = client.DownloadString(address);
+                    Query1Result result = JsonSerializer.Deserialize<Query1Result>(resultJson, new JsonSerializerOptions
+                    { PropertyNameCaseInsensitive = true });
+
+
+                    if (result.PickupDatetime != preivous.PickupDatetime && result.DropoffDatetime != preivous.DropoffDatetime)
+                    {
+                        Console.WriteLine("\n####################### Top 10 frequent routes #######################");
+                        Console.Write(result.ToString());
+                    }
+
+                    preivous = result;
+                }
+                catch (Exception) { }
+            });
+        }
+
+        private async Task ShowSecondQueryResult()
+        {
+            Query2Result preivous = new Query2Result();
+            await Task.Run(() =>
+            {
+                try
+                {
+                    WebClient client = new WebClient();
+                    string address = "https://localhost:5001/Query2Frequent?reqTimestamp=" +
+                    DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                    string resultJson = client.DownloadString(address);
+                    Query2Result result = JsonSerializer.Deserialize<Query2Result>(resultJson, new JsonSerializerOptions
+                    { PropertyNameCaseInsensitive = true });
+
+
+                    if (result.PickupDatetime != preivous.PickupDatetime && result.DropoffDatetime != preivous.DropoffDatetime)
+                    {
+                        Console.WriteLine("\n####################### Top 10 profitable area #######################");
+                        Console.Write(result.ToString());
+                    }
+
+                    preivous = result;
+                }
+                catch (Exception) { }
+            });
         }
     }
 }

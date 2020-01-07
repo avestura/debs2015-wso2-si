@@ -46,7 +46,7 @@ namespace GrandChallange.EventWebService.Controllers
 
             return new Query1Result
             {
-                Delay = (ReqLast - reqTimestamp).ToString(),
+                Delay = (DateTime.Now.GetUnixTime() - ReqLast).ToString().Replace("-", ""),
                 PickupDatetime = TriggeredPickupTime,
                 DropoffDatetime = TriggeredDropoffTime,
                 StartCellId1 = (query.Length > 0) ? ExtractLocation(query[0].Key).pick : null,

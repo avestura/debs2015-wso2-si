@@ -21,13 +21,13 @@ namespace GrandChallange.EventWebService.Controllers
         private static ConcurrentDictionary<string, Wso2Model> InMemoryData { get; }
             = new ConcurrentDictionary<string, Wso2Model>();
 
-        private KeyValuePair<string, Wso2Model>[] QueryResult { get; set; }
-
-        public static long lastReqTimestamp = 0;
+        private static KeyValuePair<string, Wso2Model>[] QueryResult { get; set; }
 
         private static string TriggeredEmptyTaxisupTime { get; set; }
 
         private static string TriggeredDropoffTime { get; set; }
+
+        public static long ReqLast = 0;
 
         public Query2FrequentController(ILogger<Query2FrequentController> logger)
         {
@@ -39,9 +39,12 @@ namespace GrandChallange.EventWebService.Controllers
         {
             var query = QueryResult;
 
+            if (query == null)
+                return new Query2Result();
+
             return new Query2Result
             {
-                Delay = (lastReqTimestamp - reqTimestamp).ToString(),
+                Delay = (DateTime.Now.GetUnixTime() - ReqLast).ToString(),
                 PickupDatetime = TriggeredEmptyTaxisupTime,
                 DropoffDatetime = TriggeredDropoffTime,
 
@@ -93,7 +96,8 @@ namespace GrandChallange.EventWebService.Controllers
 
         private void UpdateData(long reqTimestamp, long EmptyTaxisTime, long dropTime, string key)
         {
-            lastReqTimestamp = Math.Max(lastReqTimestamp, reqTimestamp);
+            ReqLast = Math.Max(ReqLast, reqTimestamp);
+
 
             QueryResult = InMemoryData.Take(10).ToArray();
 
@@ -112,7 +116,7 @@ namespace GrandChallange.EventWebService.Controllers
 
             var timestamp = req.Event.Timestamp;
 
-            lastReqTimestamp = Math.Max(lastReqTimestamp, timestamp);
+            ReqLast = Math.Max(ReqLast, timestamp);
 
             InMemoryData[cell] = req.Event;
 

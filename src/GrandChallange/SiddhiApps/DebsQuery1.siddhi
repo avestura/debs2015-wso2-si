@@ -16,7 +16,7 @@ define stream TripEvent (
 
 @sink(type='file', @map(type='json'), file.uri='C:/foo/resp.log')
 @sink(type='http', methd='POST', publisher.url='http://localhost:5000/Query1Frequent', @map(type='json'))
-define stream OutputStream (AggregatedCells string, Timestamp long);
+define stream OutputStream (AggregatedCells string, Timestamp long, PickupTime long, DropoffTime long);
 
 
 define function aggregateCells[JavaScript] return string {
@@ -37,8 +37,8 @@ from windowedStream
 select
     aggregateCells(PickCell, DropCell) as AggregatedCells,
     EventTimestamp as Timestamp,
-    PickupTime long,
-    DropoffTime long
+    PickupTime,
+    DropoffTime
 
 insert into OutputStream;
 

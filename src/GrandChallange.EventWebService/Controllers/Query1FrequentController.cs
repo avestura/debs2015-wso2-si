@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.IO;
 using GrandChallange.EventWebService.Models;
+using System.Collections.Concurrent;
 
 namespace GrandChallange.EventWebService.Controllers
 {
@@ -17,8 +18,8 @@ namespace GrandChallange.EventWebService.Controllers
     {
         private readonly ILogger<Query1FrequentController> _logger;
 
-        private static Dictionary<string, List<long>> InMemoryData { get; set; }
-            = new Dictionary<string, List<long>>();
+        private static ConcurrentDictionary<string, List<long>> InMemoryData { get; set; }
+            = new ConcurrentDictionary<string, List<long>>();
 
         private KeyValuePair<string, List<long>>[] QueryResult { get; set; }
 
@@ -72,17 +73,17 @@ namespace GrandChallange.EventWebService.Controllers
             lastReqTimestamp = Math.Max(lastReqTimestamp, reqTimestamp) ;
             var _30minAgo = reqTimestamp - (30 * 60 * 1000);
 
-            InMemoryData = InMemoryData.ToDictionary(
-                x => x.Key,
-                x => x.Value.Where(y => y > _30minAgo).ToList()
-            )
-            .OrderByDescending(x => x.Value.Count)
+            foreach(var item in InMemoryData)
+            {
+                InMemoryData[item.Key] = InMemoryData[key].Where(y => y > _30minAgo).ToList();
+            }
+
+            QueryResult = InMemoryData.OrderByDescending(x => x.Value.Count)
              .ToDictionary(
                 x => x.Key,
                 x => x.Value
-             );
-
-            QueryResult = InMemoryData.Take(10).ToArray();
+             )
+             .Take(10).ToArray();
 
             if(QueryResult.Any(x => x.Key == key))
             {

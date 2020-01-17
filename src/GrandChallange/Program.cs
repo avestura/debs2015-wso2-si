@@ -118,7 +118,7 @@ namespace GrandChallange
 
                     SendEvent(JsonSerializer.Serialize(jsonModel), FirstQueryUri);
 
-                    // Console.Write("\r{0} event send from {1}", sendedEventCount, allReadedRowCount);
+                    Console.Write("\r{0} event send from {1}", sendedEventCount, allReadedRowCount);
                     sendedEventCount++;
                 }
                 catch (Exception ex)
@@ -222,7 +222,7 @@ namespace GrandChallange
                 try
                 {
                     WebClient client = new WebClient();
-                    string address = "https://localhost:5001/Query1Frequent?reqTimestamp=" +
+                    string address = "http://localhost:5000/Query1Frequent?reqTimestamp=" +
                     DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
                     string resultJson = client.DownloadString(address);
@@ -257,11 +257,10 @@ namespace GrandChallange
                     Query2Result result = JsonSerializer.Deserialize<Query2Result>(resultJson, new JsonSerializerOptions
                     { PropertyNameCaseInsensitive = true });
 
-
                     if (result.PickupDatetime != preivous.PickupDatetime && result.DropoffDatetime != preivous.DropoffDatetime)
                     {
                         Console.WriteLine("\n####################### Top 10 profitable area #######################");
-                        Console.Write(result.ToString());
+                        Console.WriteLine(resultJson);
                     }
 
                     preivous = result;

@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using System.IO;
 using GrandChallange.EventWebService.Models;
 using System.Collections.Concurrent;
+using CsvHelper;
 
 namespace GrandChallange.EventWebService.Controllers
 {
@@ -35,14 +36,13 @@ namespace GrandChallange.EventWebService.Controllers
         }
 
         [HttpGet]
-        public Query2Result Get(long reqTimestamp)
+        public void WriteOutput()
         {
             var query = QueryResult;
 
-            if (query == null)
-                return new Query2Result();
-
-            return new Query2Result
+            Query2Result result = query == null
+                ? new Query2Result()
+                : new Query2Result
             {
                 Delay = (DateTime.Now.GetUnixTime() - ReqLast).ToString(),
                 PickupDatetime = TriggeredEmptyTaxisupTime,
@@ -92,6 +92,14 @@ namespace GrandChallange.EventWebService.Controllers
                 ProfitableCellId9 = (query.Length > 8) ? (query[8].Value).CellNumber : null,
                 ProfitableCellId10 = (query.Length > 9) ? (query[9].Value).CellNumber : null
             };
+            using var sw = new StringWriter();
+            using var writer = new CsvWriter(new StringWriter());
+            writer.WriteRecord(result);
+
+            sw.Flush();
+            var record = sw.ToString();
+
+            System.IO.File.AppendAllText("Query2_res.txt", record);
         }
 
         private void UpdateData(long reqTimestamp, long EmptyTaxisTime, long dropTime, string key)

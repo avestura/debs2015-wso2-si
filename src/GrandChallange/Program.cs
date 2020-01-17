@@ -13,9 +13,9 @@ namespace GrandChallange
 {
     public class Program
     {
-        private string CSVPath = @"D:\University\Distributed Systems\DEBS2015\sorted_data.csv";
+        private string CSVPath = @"E:\Organize\sorted_data.csv";
         private readonly Uri FirstQueryUri = new Uri("http://localhost:8006/q1");
-        private readonly Uri SecondQueryUri = new Uri("http://locahost:8006/q2");
+        private readonly Uri SecondQueryUri = new Uri("http://localhost:8007/q2");
         private readonly Uri ServiceQuery1Frequent = new Uri("https://localhost:5001/Query1Frequent");
 
 
@@ -187,7 +187,7 @@ namespace GrandChallange
                 }
                 catch (Exception ex)
                 {
-                    continue;
+
                 }
                 finally
                 {
@@ -250,7 +250,7 @@ namespace GrandChallange
                 try
                 {
                     WebClient client = new WebClient();
-                    string address = "https://localhost:5001/Query2Frequent?reqTimestamp=" +
+                    string address = "http://localhost:5000/Query2Frequent?reqTimestamp=" +
                     DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
                     string resultJson = client.DownloadString(address);

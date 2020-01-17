@@ -1,8 +1,9 @@
 @App:name("DebsQuery2")
 @App:description("")
 
-
-@source(type = 'http', receiver.url = "http://0.0.0.0:8006/q2", basic.auth.enabled = "false",
+@sink(type = 'log',
+	@map(type = 'passThrough'))
+@source(type = 'http', receiver.url = "http://127.0.0.1:8007/q2", basic.auth.enabled = "false",
 	@map(type = 'json', @attributes(    medallion='$.event.Medallion',
                                         pickup_datetime='$.event.PickupTime',
                                         dropoff_datetime='$.event.DropoffTime',
@@ -32,7 +33,6 @@ define stream reqMedianStream (CurrentProfit float, Now long);
 @source(type='http-call-response' , sink.id='median', @map(type='json'))
 define stream getMedianStream (profit float);
 
-@primaryKey('cellNo', 'emptyTaxiCount')
 define table emptyTaxiCountTable (cellNo string, emptyTaxiCount long);
 
 @sink(type='http' , publisher.url='http://localhost:5000/Query2Frequent', method='POST', @map(type='json'))

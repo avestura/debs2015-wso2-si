@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using System.IO;
 using GrandChallange.EventWebService.Models;
 using System.Collections.Concurrent;
+using CsvHelper;
 
 namespace GrandChallange.EventWebService.Controllers
 {
@@ -36,15 +37,13 @@ namespace GrandChallange.EventWebService.Controllers
             _logger = logger;
         }
 
-        [HttpGet]
-        public Query1Result Get(long reqTimestamp)
+        private void WriteResult()
         {
             var query = QueryResult;
 
-            if (query == null)
-                return new Query1Result();
-
-            return new Query1Result
+            Query1Result result = query == null
+                ? new Query1Result()
+                : new Query1Result
             {
                 Delay = (DateTime.Now.GetUnixTime() - ReqLast).ToString().Replace("-", ""),
                 PickupDatetime = TriggeredPickupTime,
@@ -71,6 +70,14 @@ namespace GrandChallange.EventWebService.Controllers
                 EndCellId9 = (query.Length > 8) ? ExtractLocation(query[8].Key).drop : null,
                 EndCellId10 = (query.Length > 9) ? ExtractLocation(query[9].Key).drop : null
             };
+            using var sw = new StringWriter();
+            using var writer = new CsvWriter(new StringWriter());
+            writer.WriteRecord(result);
+
+            sw.Flush();
+            var record = sw.ToString();
+
+            System.IO.File.AppendAllText("Query1_res.txt", record);
         }
 
         private void UpdateData(long reqTimestamp, long pickTime, long dropTime, string key)
@@ -81,7 +88,7 @@ namespace GrandChallange.EventWebService.Controllers
 
             foreach(var item in InMemoryData)
             {
-                InMemoryData[item.Key] = InMemoryData[key].Where(y => y > _30minAgo).ToList();
+                InMemoryData[item.Key] = InMemoryData[item.Key].Where(y => y > _30minAgo).ToList();
             }
 
             QueryResult = InMemoryData.ToArray().OrderByDescending(x => x.Value.Count).Take(10).ToArray();
@@ -91,6 +98,8 @@ namespace GrandChallange.EventWebService.Controllers
                 TriggeredDropoffTime = dropTime.ToString();
                 TriggeredPickupTime = pickTime.ToString();
             }
+
+            WriteResult();
         }
 
         public (string pick, string drop) ExtractLocation(string location)

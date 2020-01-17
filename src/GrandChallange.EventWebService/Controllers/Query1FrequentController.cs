@@ -19,7 +19,9 @@ namespace GrandChallange.EventWebService.Controllers
     {
         private readonly ILogger<Query1FrequentController> _logger;
 
-        private static ConcurrentDictionary<string, List<long>> InMemoryData { get;  }
+        private static object lockObject = new object();
+
+        private static ConcurrentDictionary<string, List<long>> InMemoryData { get; }
             = new ConcurrentDictionary<string, List<long>>();
 
         private static KeyValuePair<string, List<long>>[] QueryResult { get; set; }
@@ -44,56 +46,59 @@ namespace GrandChallange.EventWebService.Controllers
             Query1Result result = query == null
                 ? new Query1Result()
                 : new Query1Result
+                {
+                    Delay = (DateTime.Now.GetUnixTime() - ReqLast).ToString().Replace("-", ""),
+                    PickupDatetime = TriggeredPickupTime,
+                    DropoffDatetime = TriggeredDropoffTime,
+                    StartCellId1 = (query.Length > 0) ? ExtractLocation(query[0].Key).pick : null,
+                    StartCellId2 = (query.Length > 1) ? ExtractLocation(query[1].Key).pick : null,
+                    StartCellId3 = (query.Length > 2) ? ExtractLocation(query[2].Key).pick : null,
+                    StartCellId4 = (query.Length > 3) ? ExtractLocation(query[3].Key).pick : null,
+                    StartCellId5 = (query.Length > 4) ? ExtractLocation(query[4].Key).pick : null,
+                    StartCellId6 = (query.Length > 5) ? ExtractLocation(query[5].Key).pick : null,
+                    StartCellId7 = (query.Length > 6) ? ExtractLocation(query[6].Key).pick : null,
+                    StartCellId8 = (query.Length > 7) ? ExtractLocation(query[7].Key).pick : null,
+                    StartCellId9 = (query.Length > 8) ? ExtractLocation(query[8].Key).pick : null,
+                    StartCellId10 = (query.Length > 9) ? ExtractLocation(query[9].Key).pick : null,
+
+                    EndCellId1 = (query.Length > 0) ? ExtractLocation(query[0].Key).drop : null,
+                    EndCellId2 = (query.Length > 1) ? ExtractLocation(query[1].Key).drop : null,
+                    EndCellId3 = (query.Length > 2) ? ExtractLocation(query[2].Key).drop : null,
+                    EndCellId4 = (query.Length > 3) ? ExtractLocation(query[3].Key).drop : null,
+                    EndCellId5 = (query.Length > 4) ? ExtractLocation(query[4].Key).drop : null,
+                    EndCellId6 = (query.Length > 5) ? ExtractLocation(query[5].Key).drop : null,
+                    EndCellId7 = (query.Length > 6) ? ExtractLocation(query[6].Key).drop : null,
+                    EndCellId8 = (query.Length > 7) ? ExtractLocation(query[7].Key).drop : null,
+                    EndCellId9 = (query.Length > 8) ? ExtractLocation(query[8].Key).drop : null,
+                    EndCellId10 = (query.Length > 9) ? ExtractLocation(query[9].Key).drop : null
+                };
+            lock (lockObject)
             {
-                Delay = (DateTime.Now.GetUnixTime() - ReqLast).ToString().Replace("-", ""),
-                PickupDatetime = TriggeredPickupTime,
-                DropoffDatetime = TriggeredDropoffTime,
-                StartCellId1 = (query.Length > 0) ? ExtractLocation(query[0].Key).pick : null,
-                StartCellId2 = (query.Length > 1) ? ExtractLocation(query[1].Key).pick : null,
-                StartCellId3 = (query.Length > 2) ? ExtractLocation(query[2].Key).pick : null,
-                StartCellId4 = (query.Length > 3) ? ExtractLocation(query[3].Key).pick : null,
-                StartCellId5 = (query.Length > 4) ? ExtractLocation(query[4].Key).pick : null,
-                StartCellId6 = (query.Length > 5) ? ExtractLocation(query[5].Key).pick : null,
-                StartCellId7 = (query.Length > 6) ? ExtractLocation(query[6].Key).pick : null,
-                StartCellId8 = (query.Length > 7) ? ExtractLocation(query[7].Key).pick : null,
-                StartCellId9 = (query.Length > 8) ? ExtractLocation(query[8].Key).pick : null,
-                StartCellId10 = (query.Length > 9) ? ExtractLocation(query[9].Key).pick : null,
+                using var sw = new StringWriter();
+                using var writer = new CsvWriter(sw);
+                writer.WriteRecord(result);
+                writer.Flush();
+                var record = sw.ToString();
 
-                EndCellId1 = (query.Length > 0) ? ExtractLocation(query[0].Key).drop : null,
-                EndCellId2 = (query.Length > 1) ? ExtractLocation(query[1].Key).drop : null,
-                EndCellId3 = (query.Length > 2) ? ExtractLocation(query[2].Key).drop : null,
-                EndCellId4 = (query.Length > 3) ? ExtractLocation(query[3].Key).drop : null,
-                EndCellId5 = (query.Length > 4) ? ExtractLocation(query[4].Key).drop : null,
-                EndCellId6 = (query.Length > 5) ? ExtractLocation(query[5].Key).drop : null,
-                EndCellId7 = (query.Length > 6) ? ExtractLocation(query[6].Key).drop : null,
-                EndCellId8 = (query.Length > 7) ? ExtractLocation(query[7].Key).drop : null,
-                EndCellId9 = (query.Length > 8) ? ExtractLocation(query[8].Key).drop : null,
-                EndCellId10 = (query.Length > 9) ? ExtractLocation(query[9].Key).drop : null
-            };
-            using var sw = new StringWriter();
-            using var writer = new CsvWriter(new StringWriter());
-            writer.WriteRecord(result);
-
-            sw.Flush();
-            var record = sw.ToString();
-
-            System.IO.File.AppendAllText("Query1_res.txt", record);
+                System.IO.File.AppendAllText("Query1_res.txt", "\n");
+                System.IO.File.AppendAllText("Query1_res.txt", record);
+            }
         }
 
         private void UpdateData(long reqTimestamp, long pickTime, long dropTime, string key)
         {
-            QueryTime = Math.Max(QueryTime, dropTime) ;
+            QueryTime = Math.Max(QueryTime, dropTime);
             ReqLast = Math.Max(ReqLast, reqTimestamp);
             var _30minAgo = QueryTime - (30 * 60 * 1000);
 
-            foreach(var item in InMemoryData)
+            foreach (var item in InMemoryData)
             {
                 InMemoryData[item.Key] = InMemoryData[item.Key].Where(y => y > _30minAgo).ToList();
             }
 
             QueryResult = InMemoryData.ToArray().OrderByDescending(x => x.Value.Count).Take(10).ToArray();
 
-            if(QueryResult.Any(x => x.Key == key))
+            if (QueryResult.Any(x => x.Key == key))
             {
                 TriggeredDropoffTime = dropTime.ToString();
                 TriggeredPickupTime = pickTime.ToString();

@@ -6,37 +6,15 @@ using System;
 using System.IO;
 using System.Net;
 using System.Text.Json;
-using System.Threading.Tasks;
-using System.Timers;
 
 namespace GrandChallange
 {
     public class Program
     {
-        private string CSVPath = @"E:\Organize\sorted_data.csv";
+        private string CSVPath = @"D:\University\Distributed Systems\DEBS2015\Small Dataset\sorted_data.csv";
         private readonly Uri FirstQueryUri = new Uri("http://localhost:8006/q1");
         private readonly Uri SecondQueryUri = new Uri("http://localhost:8007/q2");
         private readonly Uri ServiceQuery1Frequent = new Uri("https://localhost:5001/Query1Frequent");
-
-
-        Timer FirstQueryResultTimer = new Timer(1000);
-        Timer SecondueryResultTimer = new Timer(1000);
-
-        public Program()
-        {
-            FirstQueryResultTimer.Elapsed += new ElapsedEventHandler(FirstQueryResultTimer_Elapsed);
-            SecondueryResultTimer.Elapsed += new ElapsedEventHandler(SecondQueryResultTimer_Elapsed);
-        }
-
-        private void FirstQueryResultTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            _ = ShowFirstQueryResult();
-        }
-
-        private void SecondQueryResultTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            _ = ShowSecondQueryResult();
-        }
 
         static void Main(string[] args)
         {
@@ -73,15 +51,16 @@ namespace GrandChallange
 
         private void RunFirstQuery()
         {
-            FirstQueryResultTimer.Start();
+            Console.WriteLine("Sending events...");
             FirstQueryInputModel newInput;
 
             using var reader = new StreamReader(CSVPath);
             using var csv = new CsvReader(reader);
             csv.Configuration.HasHeaderRecord = false;
 
-            int sendedEventCount = 1;
-            int allReadedRowCount = 1;
+            int sentEventsCount = 0;
+            int usentEventsCount = 0;
+            int allReadedRowCount = 0;
             while (csv.Read())
             {
                 try
@@ -117,32 +96,35 @@ namespace GrandChallange
                     };
 
                     SendEvent(JsonSerializer.Serialize(jsonModel), FirstQueryUri);
-
-                    Console.Write("\r{0} event send from {1}", sendedEventCount, allReadedRowCount);
-                    sendedEventCount++;
+                    sentEventsCount++;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
+                    usentEventsCount++;
                     continue;
                 }
                 finally
                 {
                     allReadedRowCount++;
+                    if (allReadedRowCount % 1000 == 0)
+                    {
+                        Console.Write($"\rAll events: {allReadedRowCount}       Sent events: {sentEventsCount}      Unsent events: {usentEventsCount}");
+                    }
                 }
             }
         }
 
         private void RunSecondQuery()
         {
-            SecondueryResultTimer.Start();
             SecondQueryInputModel newInput;
 
             using var reader = new StreamReader(CSVPath);
             using var csv = new CsvReader(reader);
             csv.Configuration.HasHeaderRecord = false;
 
-            int sendedEventCount = 1;
-            int allReadedRowCount = 1;
+            int sentEventsCount = 0;
+            int usentEventsCount = 0;
+            int allReadedRowCount = 0;
             while (csv.Read())
             {
                 try
@@ -181,17 +163,19 @@ namespace GrandChallange
                     };
 
                     SendEvent(JsonSerializer.Serialize(jsonModel), SecondQueryUri);
-
-                    Console.Write("\r{0} event send from {1}", sendedEventCount, allReadedRowCount);
-                    sendedEventCount++;
+                    sentEventsCount++;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-
+                    usentEventsCount++;
+                    continue;
                 }
                 finally
                 {
-                    allReadedRowCount++;
+                    if (allReadedRowCount % 1000 == 0)
+                    {
+                        Console.Write($"\rAll events: {allReadedRowCount}       Sent events: {sentEventsCount}      Unsent events: {usentEventsCount}");
+                    }
                 }
             }
         }
@@ -212,61 +196,6 @@ namespace GrandChallange
 
             webClient.Headers[HttpRequestHeader.ContentType] = "application/json";
             webClient.UploadStringAsync(uri, json);
-        }
-
-        private async Task ShowFirstQueryResult()
-        {
-            Query1Result preivous = new Query1Result();
-            await Task.Run(() =>
-            {
-                try
-                {
-                    WebClient client = new WebClient();
-                    string address = "http://localhost:5000/Query1Frequent?reqTimestamp=" +
-                    DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-                    string resultJson = client.DownloadString(address);
-                    Query1Result result = JsonSerializer.Deserialize<Query1Result>(resultJson, new JsonSerializerOptions
-                    { PropertyNameCaseInsensitive = true });
-
-
-                    if (result.PickupDatetime != preivous.PickupDatetime && result.DropoffDatetime != preivous.DropoffDatetime)
-                    {
-                        Console.WriteLine("\n####################### Top 10 frequent routes #######################");
-                        Console.Write(result.ToString());
-                    }
-
-                    preivous = result;
-                }
-                catch (Exception) { }
-            });
-        }
-
-        private async Task ShowSecondQueryResult()
-        {
-            Query2Result preivous = new Query2Result();
-            await Task.Run(() =>
-            {
-                try
-                {
-                    WebClient client = new WebClient();
-                    string address = "http://localhost:5000/Query2Frequent?reqTimestamp=" +
-                    DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-                    string resultJson = client.DownloadString(address);
-                    Query2Result result = JsonSerializer.Deserialize<Query2Result>(resultJson, new JsonSerializerOptions
-                    { PropertyNameCaseInsensitive = true });
-
-                    if (result.PickupDatetime != preivous.PickupDatetime && result.DropoffDatetime != preivous.DropoffDatetime)
-                    {
-                        Console.WriteLine("\n####################### Top 10 profitable area #######################");
-                        Console.WriteLine(resultJson);
-                    }
-
-                    preivous = result;
-                }
-                catch (Exception) { }
-            });
         }
     }
 }

@@ -24,32 +24,35 @@ namespace GrandChallange.EventWebService.Controllers
         private static ConcurrentDictionary<string, List<long>> InMemoryData { get; }
             = new ConcurrentDictionary<string, List<long>>();
 
-        private static KeyValuePair<string, List<long>>[] QueryResult { get; set; }
 
         public static long QueryTime = 0;
 
-        public static long ReqLast = 0;
-
-        private static string TriggeredPickupTime { get; set; }
-
-        private static string TriggeredDropoffTime { get; set; }
+        public Query1Result CurrentQuery = new Query1Result();
 
         public Query1FrequentController(ILogger<Query1FrequentController> logger)
         {
             _logger = logger;
         }
 
-        private void WriteResult()
+        private void UpdateData(long reqTimestamp, long pickTime, long dropTime, string key)
         {
-            var query = QueryResult;
+            QueryTime = Math.Max(QueryTime, dropTime);
+            var _30minAgo = QueryTime - (30 * 60 * 1000);
+
+            foreach (var item in InMemoryData)
+            {
+                InMemoryData[item.Key] = InMemoryData[item.Key].Where(y => y > _30minAgo).ToList();
+            }
+
+            var query = InMemoryData.ToArray().OrderByDescending(x => x.Value.Count).Take(10).ToArray();
 
             Query1Result result = query == null
                 ? new Query1Result()
                 : new Query1Result
                 {
-                    Delay = (DateTime.Now.GetUnixTime() - ReqLast).ToString().Replace("-", ""),
-                    PickupDatetime = TriggeredPickupTime,
-                    DropoffDatetime = TriggeredDropoffTime,
+                    Delay = (DateTime.Now.GetUnixTime() - reqTimestamp).ToString().Replace("-", ""),
+                    PickupDatetime = pickTime.ToString(),
+                    DropoffDatetime = dropTime.ToString(),
                     StartCellId1 = (query.Length > 0) ? ExtractLocation(query[0].Key).pick : null,
                     StartCellId2 = (query.Length > 1) ? ExtractLocation(query[1].Key).pick : null,
                     StartCellId3 = (query.Length > 2) ? ExtractLocation(query[2].Key).pick : null,
@@ -75,36 +78,19 @@ namespace GrandChallange.EventWebService.Controllers
 
             lock (lockObject)
             {
-                using var sw = new StringWriter();
-                using var writer = new CsvWriter(sw);
-                writer.WriteRecord(result);
-                writer.Flush();
-                var record = sw.ToString();
+                if(IsChanged(result, CurrentQuery))
+                {
+                    CurrentQuery = result;
 
-                System.IO.File.AppendAllText("Query1_res.txt", record + "\n");
+                    using var sw = new StringWriter();
+                    using var writer = new CsvWriter(sw);
+                    writer.WriteRecord(result);
+                    writer.Flush();
+                    var record = sw.ToString();
+
+                    System.IO.File.AppendAllText("Query1_res.txt", record + "\n");
+                }
             }
-        }
-
-        private void UpdateData(long reqTimestamp, long pickTime, long dropTime, string key)
-        {
-            QueryTime = Math.Max(QueryTime, dropTime);
-            ReqLast = Math.Max(ReqLast, reqTimestamp);
-            var _30minAgo = QueryTime - (30 * 60 * 1000);
-
-            foreach (var item in InMemoryData)
-            {
-                InMemoryData[item.Key] = InMemoryData[item.Key].Where(y => y > _30minAgo).ToList();
-            }
-
-            QueryResult = InMemoryData.ToArray().OrderByDescending(x => x.Value.Count).Take(10).ToArray();
-
-            if (QueryResult.Any(x => x.Key == key))
-            {
-                TriggeredDropoffTime = dropTime.ToString();
-                TriggeredPickupTime = pickTime.ToString();
-            }
-
-            WriteResult();
         }
 
         public (string pick, string drop) ExtractLocation(string location)
@@ -144,6 +130,33 @@ namespace GrandChallange.EventWebService.Controllers
             public long PickupTime { get; set; }
 
             public long DropoffTime { get; set; }
+
+        }
+
+        public bool IsChanged(Query1Result res1, Query1Result res2)
+        {
+            return
+                res1.StartCellId1 != res2.StartCellId1 ||
+                res1.StartCellId2 != res2.StartCellId2 ||
+                res1.StartCellId3 != res2.StartCellId3 ||
+                res1.StartCellId4 != res2.StartCellId4 ||
+                res1.StartCellId5 != res2.StartCellId5 ||
+                res1.StartCellId6 != res2.StartCellId6 ||
+                res1.StartCellId7 != res2.StartCellId7 ||
+                res1.StartCellId8 != res2.StartCellId8 ||
+                res1.StartCellId9 != res2.StartCellId9 ||
+                res1.StartCellId10 != res2.StartCellId10 ||
+
+                res1.EndCellId1 != res2.EndCellId1 ||
+                res1.EndCellId2 != res2.EndCellId2 ||
+                res1.EndCellId3 != res2.EndCellId3 ||
+                res1.EndCellId4 != res2.EndCellId4 ||
+                res1.EndCellId5 != res2.EndCellId5 ||
+                res1.EndCellId6 != res2.EndCellId6 ||
+                res1.EndCellId7 != res2.EndCellId7 ||
+                res1.EndCellId8 != res2.EndCellId8 ||
+                res1.EndCellId9 != res2.EndCellId9 ||
+                res1.EndCellId10 != res2.EndCellId10;
 
         }
     }

@@ -142,7 +142,7 @@ namespace GrandChallange.EventWebService.Controllers
             public long Timestamp { get; set; }
         }
 
-        public bool IsChanged(Query2Result res1, Query2Result res2)
+        private bool IsChanged(Query2Result res1, Query2Result res2)
         {
             return
                 res1.EmptyTaxiesInCellId1 != res2.EmptyTaxiesInCellId1 ||

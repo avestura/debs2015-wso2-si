@@ -133,7 +133,7 @@ namespace GrandChallange.EventWebService.Controllers
 
         }
 
-        public bool IsChanged(Query1Result res1, Query1Result res2)
+        private bool IsChanged(Query1Result res1, Query1Result res2)
         {
             return
                 res1.StartCellId1 != res2.StartCellId1 ||

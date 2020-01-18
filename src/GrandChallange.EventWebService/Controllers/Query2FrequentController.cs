@@ -19,7 +19,7 @@ namespace GrandChallange.EventWebService.Controllers
     {
         private readonly ILogger<Query2FrequentController> _logger;
 
-        private static object lockObject = new object();
+        private static readonly object lockObject = new object();
 
         private static ConcurrentDictionary<string, Wso2Model> InMemoryData { get; }
             = new ConcurrentDictionary<string, Wso2Model>();
@@ -36,7 +36,7 @@ namespace GrandChallange.EventWebService.Controllers
         {
             _logger = logger;
         }
-               
+
         public void WriteOutput()
         {
             var query = QueryResult;
@@ -93,6 +93,7 @@ namespace GrandChallange.EventWebService.Controllers
                 ProfitableCellId9 = (query.Length > 8) ? (query[8].Value).CellNumber : null,
                 ProfitableCellId10 = (query.Length > 9) ? (query[9].Value).CellNumber : null
             };
+
             lock (lockObject)
             {
                 using var sw = new StringWriter();
@@ -101,9 +102,8 @@ namespace GrandChallange.EventWebService.Controllers
                 writer.Flush();
                 var record = sw.ToString();
 
-                System.IO.File.AppendAllText("Query2_res.txt", "\n");
-                System.IO.File.AppendAllText("Query2_res.txt", record);
-            }            
+                System.IO.File.AppendAllText("Query2_res.txt", record + "\n");
+            }
         }
 
         private void UpdateData(long reqTimestamp, long EmptyTaxisTime, long dropTime, string key)

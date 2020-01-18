@@ -19,7 +19,7 @@ namespace GrandChallange.EventWebService.Controllers
     {
         private readonly ILogger<Query1FrequentController> _logger;
 
-        private static object lockObject = new object();
+        private static readonly object lockObject = new object();
 
         private static ConcurrentDictionary<string, List<long>> InMemoryData { get; }
             = new ConcurrentDictionary<string, List<long>>();
@@ -72,6 +72,7 @@ namespace GrandChallange.EventWebService.Controllers
                     EndCellId9 = (query.Length > 8) ? ExtractLocation(query[8].Key).drop : null,
                     EndCellId10 = (query.Length > 9) ? ExtractLocation(query[9].Key).drop : null
                 };
+
             lock (lockObject)
             {
                 using var sw = new StringWriter();
@@ -80,8 +81,7 @@ namespace GrandChallange.EventWebService.Controllers
                 writer.Flush();
                 var record = sw.ToString();
 
-                System.IO.File.AppendAllText("Query1_res.txt", "\n");
-                System.IO.File.AppendAllText("Query1_res.txt", record);
+                System.IO.File.AppendAllText("Query1_res.txt", record + "\n");
             }
         }
 

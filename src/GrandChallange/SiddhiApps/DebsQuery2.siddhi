@@ -1,8 +1,6 @@
 @App:name("DebsQuery2")
 @App:description("")
 
-@sink(type = 'log',
-	@map(type = 'passThrough'))
 @source(type = 'http', receiver.url = "http://127.0.0.1:8007/q2", basic.auth.enabled = "false",
 	@map(type = 'json', @attributes(    medallion='$.event.Medallion',
                                         pickup_datetime='$.event.PickupTime',

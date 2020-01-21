@@ -19,16 +19,20 @@ namespace GrandChallange.EventWebService.Controllers
 
         public static ConcurrentDictionary<float, long> Data { get; set; } = new ConcurrentDictionary<float, long>();
 
+        public static long CurrentTime = 0;
+
         [HttpPost]
         public object Post(Wso2Request<Wso2Model> input)
         {
-            var ts = input.Event.Now;
 
             lock (lockObject)
             {
+                var ts = input.Event.Now;
+                CurrentTime = Math.Max(CurrentTime, ts);
+
                 foreach (var item in Data)
                 {
-                    if (ts - 900000 > item.Value)
+                    if (CurrentTime - 900000 > item.Value)
                         Data.TryRemove(item.Key, out long x);
                 }
 

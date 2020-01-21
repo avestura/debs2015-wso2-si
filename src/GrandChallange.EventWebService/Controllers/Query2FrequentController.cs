@@ -62,7 +62,7 @@ namespace GrandChallange.EventWebService.Controllers
 
         private void UpdateData(long reqTimestamp, long EmptyTaxisTime, long dropTime, string key)
         {
-            var query = InMemoryData.Take(10).ToArray();
+            var query = InMemoryData.ToArray().OrderByDescending(x => x.Value.Profitability).Take(10).ToArray();
 
             Query2Result result = query == null
                 ? new Query2Result()

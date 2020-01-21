@@ -15,8 +15,7 @@ namespace GrandChallange.EventWebService.Controllers
     [ApiController]
     public class Query2MedianController : ControllerBase
     {
-        //public static List<(float profit, long timestamp)> Data { get; set; }
-        //    = new List<(float, long)>();
+        public static object lockObject = new object();
 
         public static ConcurrentDictionary<float, long> Data { get; set; } = new ConcurrentDictionary<float, long>();
 
@@ -25,13 +24,17 @@ namespace GrandChallange.EventWebService.Controllers
         {
             var ts = input.Event.Now;
 
-            foreach (var item in Data)
+            lock (lockObject)
             {
-                if (item.Value > ts - 900000)
-                    Data.TryRemove(item.Key, out long x);
-            }
+                foreach (var item in Data)
+                {
+                    if (ts - 900000 > item.Value)
+                        Data.TryRemove(item.Key, out long x);
+                }
 
-            Data[input.Event.CurrentProfit] = input.Event.Now;
+
+                Data[input.Event.CurrentProfit] = input.Event.Now;
+            }
 
             return new
             {
@@ -47,7 +50,6 @@ namespace GrandChallange.EventWebService.Controllers
             }
             catch (Exception)
             {
-
                 return 0;
             }
         }

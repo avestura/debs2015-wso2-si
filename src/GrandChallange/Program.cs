@@ -11,10 +11,15 @@ namespace GrandChallange
 {
     public class Program
     {
-        private string CSVPath = @"D:\University\Distributed Systems\DEBS2015\Small Dataset\sorted_data.csv";
+        private string CSVPath = @"E:\Organize\small_data\sorted_data.csv";
         private readonly Uri FirstQueryUri = new Uri("http://localhost:8006/q1");
         private readonly Uri SecondQueryUri = new Uri("http://localhost:8007/q2");
         private readonly Uri ServiceQuery1Frequent = new Uri("https://localhost:5001/Query1Frequent");
+
+
+        private static DateTime LastDateTime { get; set; } = DateTime.Now;
+
+        private static long LastDropoff { get; set; } = 0;
 
         static void Main(string[] args)
         {
@@ -60,12 +65,19 @@ namespace GrandChallange
 
             int sentEventsCount = 0;
             int usentEventsCount = 0;
-            int allReadedRowCount = 0;
+            int logFilterCount = 0;
+            int allCount = 0;
             while (csv.Read())
             {
                 try
                 {
                     var record = csv.GetRecord<DataModel>();
+
+                    var dropTime = record.DropoffDatetime.GetUnixTime();
+                    LastDropoff = Math.Max(LastDropoff, dropTime);
+                    var _30minAgo = LastDropoff - (30 * 60 * 1000);
+
+                    if (_30minAgo > dropTime) continue;
 
                     var pickUpLocation = new TaxiLocation
                         (
@@ -101,14 +113,21 @@ namespace GrandChallange
                 catch (Exception)
                 {
                     usentEventsCount++;
-                    continue;
                 }
                 finally
                 {
-                    allReadedRowCount++;
-                    if (allReadedRowCount % 1000 == 0)
+                    logFilterCount++;
+                    allCount++;
+                    if (logFilterCount > 1000)
                     {
-                        Console.Write($"\rAll events: {allReadedRowCount}       Sent events: {sentEventsCount}      Unsent events: {usentEventsCount}");
+                        var now = DateTime.Now;
+                        Console.Write($"All: {allCount}    Sent events: {sentEventsCount}      Unsent events: {usentEventsCount}, {now.ToLongTimeString()}, Took ");
+                        var d = now - LastDateTime;
+                        Console.ForegroundColor = (d > TimeSpan.FromSeconds(10)) ? ConsoleColor.Red : ConsoleColor.Green;
+                        Console.WriteLine(d.ToString());
+                        Console.ResetColor();
+                        LastDateTime = now;
+                        logFilterCount = 0;
                     }
                 }
             }
@@ -124,12 +143,19 @@ namespace GrandChallange
 
             int sentEventsCount = 0;
             int usentEventsCount = 0;
-            int allReadedRowCount = 0;
+            int logFilterCount = 0;
+            int allCount = 0;
             while (csv.Read())
             {
                 try
                 {
                     var record = csv.GetRecord<DataModel>();
+
+                    var dropTime = record.DropoffDatetime.GetUnixTime();
+                    LastDropoff = Math.Max(LastDropoff, dropTime);
+                    var _30minAgo = LastDropoff - (30 * 60 * 1000);
+
+                    if (_30minAgo > dropTime) continue;
 
                     var pickUpLocation = new TaxiLocation
                         (
@@ -168,13 +194,21 @@ namespace GrandChallange
                 catch (Exception)
                 {
                     usentEventsCount++;
-                    continue;
                 }
                 finally
                 {
-                    if (allReadedRowCount % 1000 == 0)
+                    logFilterCount++;
+                    allCount++;
+                    if (logFilterCount > 1000)
                     {
-                        Console.Write($"\rAll events: {allReadedRowCount}       Sent events: {sentEventsCount}      Unsent events: {usentEventsCount}");
+                        var now = DateTime.Now;
+                        Console.Write($"All: {allCount}    Sent events: {sentEventsCount}      Unsent events: {usentEventsCount}, {now.ToLongTimeString()}, Took ");
+                        var d = now - LastDateTime;
+                        Console.ForegroundColor = (d > TimeSpan.FromSeconds(10)) ? ConsoleColor.Red : ConsoleColor.Green;
+                        Console.WriteLine(d.ToString());
+                        Console.ResetColor();
+                        LastDateTime = now;
+                        logFilterCount = 0;
                     }
                 }
             }

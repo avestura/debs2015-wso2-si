@@ -10,6 +10,7 @@ using System.IO;
 using GrandChallange.EventWebService.Models;
 using System.Collections.Concurrent;
 using CsvHelper;
+using CsvHelper.TypeConversion;
 
 namespace GrandChallange.EventWebService.Controllers
 {
@@ -21,26 +22,53 @@ namespace GrandChallange.EventWebService.Controllers
 
         private static readonly object lockObject = new object();
 
+        public static long QueryTime = 0;
+
         private static ConcurrentDictionary<string, Wso2Model> InMemoryData { get; }
             = new ConcurrentDictionary<string, Wso2Model>();
 
         public static Query2Result CurrentQuery = new Query2Result();
+
         public Query2FrequentController(ILogger<Query2FrequentController> logger)
         {
             _logger = logger;
         }
 
+        [HttpPost]
+        public string Post(Wso2Request<Wso2Model> req)
+        {
+            var ev = req.Event;
+            var cell = ev.CellNumber;
+
+            var timestamp = req.Event.Timestamp;
+
+            if (req.Event.DropoffTime == null) return "bypass";
+
+            QueryTime = Math.Max(QueryTime, req.Event.DropoffTime.Value);
+            var _30minAgo = QueryTime - (30 * 60 * 1000);
+
+            if (_30minAgo > req.Event.DropoffTime)
+                return "bypass";
+
+            lock (lockObject)
+            {
+                InMemoryData[cell] = req.Event;
+
+                UpdateData(timestamp, req.Event.PickupTime.Value, req.Event.DropoffTime.Value, cell);
+            }
+
+            return "OK";
+        }
+
         private void UpdateData(long reqTimestamp, long EmptyTaxisTime, long dropTime, string key)
         {
-
             var query = InMemoryData.Take(10).ToArray();
-
 
             Query2Result result = query == null
                 ? new Query2Result()
                 : new Query2Result
                 {
-                    Delay = (DateTime.Now.GetUnixTime() - reqTimestamp).ToString(),
+                    Delay = (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - reqTimestamp).ToString(),
                     PickupDatetime = dropTime.ToString(),
                     DropoffDatetime = EmptyTaxisTime.ToString(),
 
@@ -89,8 +117,6 @@ namespace GrandChallange.EventWebService.Controllers
                     ProfitableCellId10 = (query.Length > 9) ? (query[9].Value).CellNumber : null
                 };
 
-            lock (lockObject)
-            {
                 if (IsChanged(result, CurrentQuery))
                 {
                     CurrentQuery = result;
@@ -103,25 +129,11 @@ namespace GrandChallange.EventWebService.Controllers
 
                     System.IO.File.AppendAllText("Query2_res.txt", record + "\n");
                 }
-            }
-
 
         }
 
-        [HttpPost]
-        public string Post(Wso2Request<Wso2Model> req)
-        {
-            var ev = req.Event;
-            var cell = ev.CellNumber;
 
-            var timestamp = req.Event.Timestamp;
 
-            InMemoryData[cell] = req.Event;
-
-            UpdateData(timestamp, req.Event.PickupTime.Value, req.Event.DropoffTime.Value, cell);
-
-            return "OK";
-        }
 
         public class Wso2Model
         {
